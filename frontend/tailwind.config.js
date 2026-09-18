@@ -1,0 +1,48 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        surface: "#f8f9ff",
+        "surface-dim": "#cbdbf5",
+        "surface-bright": "#f8f9ff",
+        "surface-container-lowest": "#ffffff",
+        "surface-container-low": "#eff4ff",
+        "surface-container": "#e5eeff",
+        "surface-container-high": "#dce9ff",
+        "surface-container-highest": "#d3e4fe",
+        "on-surface": "#0b1c30",
+        "on-surface-variant": "#434655",
+        "inverse-surface": "#213145",
+        "inverse-on-surface": "#eaf1ff",
+        outline: "#737686",
+        "outline-variant": "#c3c6d7",
+        primary: "#004ac6",
+        "on-primary": "#ffffff",
+        "primary-container": "#2563eb",
+        "on-primary-container": "#eeefff",
+        "primary-fixed": "#dbe1ff",
+        "primary-fixed-dim": "#b4c5ff",
+        "on-primary-fixed": "#00174b",
+        secondary: "#565e74",
+        "on-secondary": "#ffffff",
+        "secondary-container": "#dae2fd",
+        tertiary: "#48566a",
+        "tertiary-container": "#606e83",
+        error: "#ba1a1a",
+        "on-error": "#ffffff",
+      },
+      fontFamily: {
+        headline: ['"Plus Jakarta Sans"', 'sans-serif'],
+        body: ['"Plus Jakarta Sans"', 'sans-serif'],
+        code: ['"JetBrains Mono"', 'monospace'],
+      },
+    },
+  },
+  plugins: [],
+}

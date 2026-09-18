@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-surface" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ripple — Institutional Policy Impact Engine</title>
+<link rel="icon" type="image/png" href="/static/logo.png"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface": "#f8f9ff",
+            "outline": "#737686",
+            "on-error": "#ffffff",
+            "on-tertiary-fixed": "#0d1c2e",
+            "tertiary-fixed-dim": "#b9c7df",
+            "on-tertiary-container": "#e9f0ff",
+            "surface-container": "#e5eeff",
+            "primary-fixed": "#dbe1ff",
+            "on-secondary": "#ffffff",
+            "on-surface": "#0b1c30",
+            "on-tertiary": "#ffffff",
+            "tertiary-container": "#606e83",
+            "primary": "#004ac6",
+            "outline-variant": "#c3c6d7",
+            "error": "#ba1a1a",
+            "secondary-fixed": "#dae2fd",
+            "inverse-surface": "#213145",
+            "surface-container-low": "#eff4ff",
+            "surface-variant": "#d3e4fe",
+            "surface-container-highest": "#d3e4fe",
+            "on-surface-variant": "#434655",
+            "on-secondary-fixed": "#131b2e",
+            "surface-container-lowest": "#ffffff",
+            "secondary-fixed-dim": "#bec6e0",
+            "secondary-container": "#dae2fd",
+            "on-primary-container": "#eeefff",
+            "on-tertiary-fixed-variant": "#3a485b",
+            "background": "#f8f9ff",
+            "inverse-primary": "#b4c5ff",
+            "on-primary-fixed-variant": "#003ea8",
+            "surface-dim": "#cbdbf5",
+            "tertiary-fixed": "#d5e3fc",
+            "surface-container-high": "#dce9ff",
+            "tertiary": "#48566a",
+            "on-primary-fixed": "#00174b",
+            "inverse-on-surface": "#eaf1ff",
+            "error-container": "#ffdad6",
+            "surface-tint": "#0053db",
+            "primary-container": "#2563eb",
+            "surface-bright": "#f8f9ff",
+            "on-error-container": "#93000a",
+            "on-secondary-container": "#5c647a",
+            "secondary": "#565e74",
+            "primary-fixed-dim": "#b4c5ff",
+            "on-primary": "#ffffff",
+            "on-background": "#0b1c30",
+            "on-secondary-fixed-variant": "#3f465c"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "fontFamily": {
+            "headline-md": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "headline-xl": ["Plus Jakarta Sans"],
+            "label-md": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "code-md": ["JetBrains Mono"],
+            "headline-xl-mobile": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "code-sm": ["JetBrains Mono"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "headline-md": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-md": ["13px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "headline-sm": ["15px", { "lineHeight": "20px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "code-md": ["12px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "headline-xl-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "code-sm": ["11px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      font-feature-settings: 'liga';
+    }
+    /* Hairline border accents and clean scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f8f9ff;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c3c6d7;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #737686;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-body-md text-on-surface bg-surface antialiased overflow-hidden">
+<!-- ==================== SHARED COMPONENT: TopNavBar ==================== -->
+<!-- Executed directly using styles and content from Shared Components JSON -->
+<header class="w-full px-6 flex items-center justify-between border-b border-outline-variant dark:border-outline h-14 bg-surface-container-lowest dark:bg-inverse-surface shrink-0 z-30">
+<div class="flex items-center gap-8">
+<!-- Brand Logo + Context Switcher -->
+<div class="flex items-center gap-3">
+<img src="/static/logo.png" alt="Ripple Logo" class="w-7 h-7 rounded-md object-cover shadow-sm" />
+<div class="flex items-center gap-2">
+<span class="text-headline-md font-headline-md font-bold text-on-surface dark:text-inverse-on-surface tracking-tight">Ripple</span>
+<span class="text-outline-variant">/</span>
+<div class="flex items-center gap-1.5 px-2 py-1 bg-surface-container-low rounded border border-outline-variant/40 hover:border-outline cursor-pointer transition-colors">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Apex University · Office of Academic Affairs</span>
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">unfold_more</span>
+</div>
+</div>
+</div>
+<!-- Navigation Links (Active mapping: 'Impact Analyses') -->
+<nav class="hidden md:flex items-center space-x-6 pt-3">
+<a class="text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface pb-3 transition-colors text-label-md font-label-md" href="#">
+          Dashboard
+        </a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface pb-3 transition-colors text-label-md font-label-md" href="#">
+          Policies
+        </a>
+<a class="text-primary dark:text-inverse-primary font-semibold border-b-2 border-primary dark:border-inverse-primary pb-3 text-label-md font-label-md" href="#">
+          Impact Analyses
+        </a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:text-on-surface dark:hover:text-inverse-on-surface pb-3 transition-colors text-label-md font-label-md" href="#">
+          Audit Trail
+        </a>
+</nav>
+</div>
+<!-- Trailing Actions & Profile -->
+<div class="flex items-center gap-4">
+<!-- Telemetry System Operational Badge -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface border border-outline-variant/60">
+<span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">System Operational</span>
+</div>
+<!-- Search shortcut modal trigger -->
+<div class="hidden lg:flex items-center gap-2 px-2 py-1 rounded bg-surface border border-outline-variant/60 text-outline cursor-pointer hover:border-outline transition-colors">
+<span class="material-symbols-outlined text-[15px]">search</span>
+<span class="font-label-sm text-label-sm">Quick Jump</span>
+<kbd class="font-code-sm text-[10px] bg-surface-container-low px-1 rounded border border-outline-variant/40">⌘K</kbd>
+</div>
+<div class="h-4 w-[1px] bg-outline-variant/60"></div>
+<!-- Trailing Icon Actions -->
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-1" title="notifications">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-1" title="help">
+<span class="material-symbols-outlined">help</span>
+</button>
+<!-- Administrator Profile Badge -->
+<div class="flex items-center gap-2 pl-1 cursor-pointer">
+<div class="w-7 h-7 rounded-full bg-primary-fixed text-on-primary-fixed font-semibold font-label-md flex items-center justify-center border border-primary/20 text-xs">
+          AT
+        </div>
+<div class="flex flex-col text-left">
+<span class="font-label-md text-label-md text-on-surface font-semibold leading-tight">Dr. Aris Thorne</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant leading-tight">Registrar</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ==================== MAIN WORKSPACE VIEWPORT ==================== -->
+<div class="flex-1 flex overflow-hidden">
+<!-- LEFT & CENTER SCROLLABLE WORKBENCH CANVAS -->
+<main class="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+<!-- BREADCRUMB & PAGE HEADER -->
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-outline-variant/40 pb-5">
+<div class="space-y-1">
+<!-- Monospace Breadcrumb -->
+<div class="flex items-center gap-2 font-code-sm text-code-sm text-on-surface-variant">
+<span>Impact Analyses</span>
+<span class="text-outline-variant">/</span>
+<span class="bg-surface-container px-1.5 py-0.5 rounded text-primary font-medium">ANL-2026-089</span>
+<span class="text-outline-variant">/</span>
+<span>Academic Regulation 2026 — Attendance Reform</span>
+</div>
+          <h1 id="policy-title-header" class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">
+            Policy Impact Analysis: Academic Regulation 2026
+          </h1>
+          <!-- Meta Bar Lineage -->
+          <div class="flex flex-wrap items-center gap-3 pt-1 font-label-md text-label-md text-on-surface-variant">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-[15px] text-tertiary">groups</span>
+              Target Scope: <span class="text-on-surface font-semibold">S5 Students · Computer Science &amp; Engineering</span>
+            </span>
+            <span class="text-outline-variant">•</span>
+            <span class="flex items-center gap-1 font-code-sm text-code-sm">
+              <span class="material-symbols-outlined text-[15px] text-tertiary">database</span>
+              Evaluated against SIS Database <span class="bg-surface-container-high px-1 rounded text-on-surface">v4.2</span>
+            </span>
+            <span class="text-outline-variant">•</span>
+            <span class="flex items-center gap-1 font-code-sm text-code-sm">
+              <span class="material-symbols-outlined text-[15px] text-tertiary">schedule</span>
+              Evaluated at 14:32 EST
+            </span>
+          </div>
+        </div>
+        <!-- Action Button Group -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-open-upload" class="h-8 px-3 rounded bg-surface-container-lowest border border-outline-variant/60 hover:bg-surface-container-low text-on-surface text-label-md font-label-md transition-colors flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-[16px]">upload_file</span>
+            Upload Policy Document
+          </button>
+          <button id="btn-export-header" class="h-8 px-3 rounded bg-surface-container-lowest border border-outline-variant/60 hover:bg-surface-container-low text-on-surface text-label-md font-label-md transition-colors flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined text-[16px]">ios_share</span>
+            Export Impact Report
+          </button>
+          <button id="btn-rerun-header" class="h-8 px-3.5 rounded bg-primary text-on-primary hover:bg-primary-container text-label-md font-label-md transition-colors flex items-center gap-1.5 font-medium shadow-sm">
+            <span class="material-symbols-outlined text-[16px]">refresh</span>
+            Re-run Evaluation
+          </button>
+        </div>
+      </div>
+      <!-- 5-STAGE POLICY PIPELINE STEPPER -->
+      <div class="bg-surface-container-lowest rounded border border-outline-variant/50 p-3 shadow-sm">
+        <div class="grid grid-cols-5 gap-3 text-left">
+          <!-- Stage 1 -->
+          <div id="stepper-1" class="flex flex-col border-r border-outline-variant/30 pr-3">
+            <div class="flex items-center justify-between">
+              <span class="font-code-sm text-code-sm text-on-surface font-semibold tracking-wide">1. UPLOAD</span>
+              <span class="stepper-badge font-code-sm text-code-sm text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">✓ Complete</span>
+            </div>
+            <span id="stepper-1-desc" class="font-code-sm text-[11px] text-on-surface-variant truncate mt-1" title="Academic_Reg_2026_Final.pdf">
+              Academic_Reg_2026_Final.pdf
+            </span>
+          </div>
+          <!-- Stage 2 -->
+          <div id="stepper-2" class="flex flex-col border-r border-outline-variant/30 pr-3">
+            <div class="flex items-center justify-between">
+              <span class="font-code-sm text-code-sm text-on-surface font-semibold tracking-wide">2. AI ANALYSIS</span>
+              <span class="stepper-badge font-code-sm text-code-sm text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">✓ Complete</span>
+            </div>
+            <span id="stepper-2-desc" class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+              Rule candidates parsed
+            </span>
+          </div>
+          <!-- Stage 3 -->
+          <div id="stepper-3" class="flex flex-col border-r border-outline-variant/30 pr-3 bg-surface-container-low/50 -m-1 p-2 rounded">
+            <div class="flex items-center justify-between">
+              <span class="font-code-sm text-code-sm text-primary font-bold tracking-wide">3. HUMAN REVIEW</span>
+              <span class="stepper-badge font-code-sm text-code-sm text-primary bg-primary-fixed/50 px-1.5 py-0.5 rounded border border-primary/30 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Active
+              </span>
+            </div>
+            <span id="stepper-3-desc" class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+              Confirmed by Registrar
+            </span>
+          </div>
+          <!-- Stage 4 -->
+          <div id="stepper-4" class="flex flex-col border-r border-outline-variant/30 pr-3">
+            <div class="flex items-center justify-between">
+              <span class="font-code-sm text-code-sm text-on-surface font-semibold tracking-wide">4. VALIDATE</span>
+              <span class="stepper-badge font-code-sm text-code-sm text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">✓ Complete</span>
+            </div>
+            <span id="stepper-4-desc" class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+              Deterministic syntax OK
+            </span>
+          </div>
+          <!-- Stage 5 -->
+          <div id="stepper-5" class="flex flex-col">
+            <div class="flex items-center justify-between">
+              <span class="font-code-sm text-code-sm text-primary font-bold tracking-wide">5. IMPACT</span>
+              <span class="stepper-badge font-code-sm text-code-sm text-primary bg-primary-fixed/50 px-1.5 py-0.5 rounded border border-primary/30 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Active
+              </span>
+            </div>
+            <span id="stepper-5-desc" class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+              Evaluated 127 records
+            </span>
+          </div>
+        </div>
+      </div>
+      <!-- OVERVIEW DASHBOARD STATS CARDS -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Metric 1 -->
+        <div class="p-4 bg-surface-container-lowest rounded border border-outline-variant/50 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-on-surface-variant">
+            <span class="font-label-md text-label-md font-medium">Students Monitored</span>
+            <span class="material-symbols-outlined text-[18px] text-tertiary">groups</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span id="stat-total-students" class="font-headline-lg text-headline-lg font-bold text-on-surface">500</span>
+            <span class="font-label-sm text-label-sm text-on-surface-variant">Campus total cohort</span>
+          </div>
+          <div id="stat-scoped-students" class="mt-1 font-code-sm text-[11px] text-outline">127 active in evaluation scope</div>
+        </div>
+        <!-- Metric 2 (Affected) -->
+        <div class="p-4 bg-surface-container-lowest rounded border border-outline-variant/50 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-on-surface-variant">
+            <span class="font-label-md text-label-md font-medium">Affected Cohort</span>
+            <span class="material-symbols-outlined text-[18px] text-rose-600">warning</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span id="stat-affected-count" class="font-headline-lg text-headline-lg font-bold text-rose-600">6</span>
+            <span class="font-label-sm text-label-sm text-rose-700 bg-rose-50 px-1.5 rounded">Exam Barred</span>
+          </div>
+          <div class="mt-1 font-code-sm text-[11px] text-outline">Deterministic threshold failure</div>
+        </div>
+        <!-- Metric 3 (At-Risk) -->
+        <div class="p-4 bg-surface-container-lowest rounded border border-outline-variant/50 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-on-surface-variant">
+            <span class="font-label-md text-label-md font-medium">At-Risk Margin</span>
+            <span class="material-symbols-outlined text-[18px] text-amber-600">trending_down</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span id="stat-at-risk-count" class="font-headline-lg text-headline-lg font-bold text-amber-700">18</span>
+            <span class="font-label-sm text-label-sm text-amber-800 bg-amber-50 px-1.5 rounded">Within 5.0% Margin</span>
+          </div>
+          <div class="mt-1 font-code-sm text-[11px] text-outline">Actionable early warning alert</div>
+        </div>
+        <!-- Metric 4 -->
+        <div class="p-4 bg-surface-container-lowest rounded border border-outline-variant/50 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-on-surface-variant">
+            <span class="font-label-md text-label-md font-medium">Telemetry &amp; Sync</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="font-headline-sm text-headline-sm font-bold text-on-surface">SIS Live DB</span>
+            <span class="font-code-sm text-code-sm text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">14ms latency</span>
+          </div>
+          <div class="mt-1 font-code-sm text-[11px] text-outline">Read replica #04 · TLS verified</div>
+        </div>
+      </div>
+      <!-- RULE CONFIRMATION CARD (Deterministic Centerpiece) -->
+      <section class="bg-surface-container-lowest rounded border border-outline-variant/60 shadow-sm overflow-hidden">
+        <!-- Top institutional badge & header -->
+        <div class="px-5 py-3.5 bg-surface-container-low/40 border-b border-outline-variant/40 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <span class="font-label-sm text-label-sm uppercase tracking-wider bg-surface-container text-on-surface font-semibold px-2 py-0.5 rounded border border-outline-variant/60">
+              AI EXTRACTED · Structured rule ready for review
+            </span>
+            <span class="text-outline-variant text-xs">•</span>
+            <span id="rule-confidence" class="font-code-sm text-code-sm text-on-surface-variant">Confidence: 99.8% (Exact Clause Mapping)</span>
+          </div>
+          <div id="rule-status-badge" class="flex items-center gap-1.5 font-label-sm text-label-sm text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span class="material-symbols-outlined text-[14px]">verified</span>
+            Confirmed by Registrar
+          </div>
+        </div>
+        <div class="p-5 space-y-4">
+          <div>
+            <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">
+              DETECTED POLICY RULE: Minimum Attendance Requirement
+            </h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              Automated threshold conversion from qualitative institutional bylaw to deterministic programmatic query.
+            </p>
+          </div>
+          <!-- Comparison Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-6 gap-3 p-3.5 bg-surface rounded border border-outline-variant/40">
+            <div>
+              <span class="font-label-sm text-label-sm text-on-surface-variant block">Previous Requirement</span>
+              <span id="rule-prev-val" class="font-headline-sm text-headline-sm font-semibold text-on-surface mt-0.5 block">75.0%</span>
+            </div>
+            <div>
+              <span class="font-label-sm text-label-sm text-on-surface-variant block">New Requirement</span>
+              <div id="rule-new-val-container">
+                <span class="font-headline-sm text-headline-sm font-bold text-primary mt-0.5 block">80.0%</span>
+              </div>
+            </div>
+            <div id="rule-machine-formula-container" class="md:col-span-2">
+              <span class="font-label-sm text-label-sm text-on-surface-variant block">Machine Rule (Executable)</span>
+              <code class="font-code-md text-code-md font-semibold text-primary bg-surface-container-lowest px-2 py-0.5 rounded border border-outline-variant/60 mt-0.5 inline-block">
+                attendance_pct &gt;= 80
+              </code>
+            </div>
+            <div>
+              <span class="font-label-sm text-label-sm text-on-surface-variant block">Target Scope</span>
+              <span id="rule-scope" class="font-body-md text-body-md font-medium text-on-surface mt-0.5 block">S5 (All Depts)</span>
+            </div>
+            <div>
+              <span class="font-label-sm text-label-sm text-on-surface-variant block">Effective Date</span>
+              <span class="font-code-sm text-code-sm font-medium text-on-surface mt-0.5 block">2026-07-01</span>
+            </div>
+          </div>
+          <!-- Policy Citation Excerpt Block -->
+          <div class="p-4 bg-surface rounded border-l-4 border-primary border-t border-r border-b border-outline-variant/40 text-on-surface space-y-1.5">
+            <div class="flex items-center justify-between text-outline">
+              <span id="rule-citation-meta" class="font-code-sm text-code-sm text-primary font-semibold flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[15px]">menu_book</span>
+                Statutory Source Citation: Academic Regulation 2026 · Section 3.2 · Page 4
+              </span>
+              <span class="font-label-sm text-[10px] text-tertiary">Cryptographically Verified Extract</span>
+            </div>
+            <blockquote id="rule-citation-quote" class="font-body-md text-body-md italic text-on-surface leading-relaxed pt-1">
+              "Section 3.2 Attendance Threshold: Commencing Academic Year 2026-27, all undergraduate students registered in Semester 5 onward must maintain a cumulative physical attendance of not less than <span class="bg-primary-fixed font-semibold not-italic px-1 text-on-primary-fixed">80.0%</span> in each registered lecture course to qualify for end-semester examinations, superseding the former <span class="line-through text-outline not-italic">75.0%</span> threshold."
+            </blockquote>
+          </div>
+          <!-- Action Bar -->
+          <div class="flex items-center justify-between pt-2 border-t border-outline-variant/30">
+            <div class="flex items-center gap-2">
+              <button id="btn-edit-rule" class="h-8 px-3 rounded bg-surface border border-outline-variant/60 hover:bg-surface-container-low text-on-surface text-label-md font-label-md transition-colors flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">edit</span>
+                Edit Rule
+              </button>
+            </div>
+            <button id="btn-confirm-rule" class="h-8 px-4 rounded bg-primary text-on-primary hover:bg-primary-container text-label-md font-label-md font-semibold transition-colors flex items-center gap-1.5 shadow-sm">
+              <span class="material-symbols-outlined text-[16px]">check_circle</span>
+              Confirm &amp; Run Evaluation
+            </button>
+          </div>
+        </div>
+      </section>
+      <!-- IMPACT RESULTS & DENSE DATA TABLE (Stripe-grade precision) -->
+      <section class="bg-surface-container-lowest rounded border border-outline-variant/60 shadow-sm overflow-hidden">
+        <!-- Results Summary Chips & Filter Bar -->
+        <div class="p-4 border-b border-outline-variant/40 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="font-headline-sm text-headline-sm font-bold text-on-surface">Cohort Simulation Results</span>
+              <span class="text-outline-variant">|</span>
+              <div class="flex items-center gap-1.5">
+                <span id="chip-analyzed" class="px-2.5 py-0.5 rounded font-label-sm text-label-sm bg-surface-container-low text-on-surface border border-outline-variant/50">
+                  127 Students Analyzed
+                </span>
+                <span id="chip-unaffected" class="px-2.5 py-0.5 rounded font-label-sm text-label-sm bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> 103 Unaffected
+                </span>
+                <span id="chip-at-risk" class="px-2.5 py-0.5 rounded font-label-sm text-label-sm bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span> 18 At Risk
+                </span>
+                <span id="chip-affected" class="px-2.5 py-0.5 rounded font-label-sm text-label-sm bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> 6 Affected
+                </span>
+              </div>
+            </div>
+            <button id="btn-download-csv" class="h-8 px-3 rounded bg-surface border border-outline-variant/60 hover:bg-surface-container-low text-on-surface text-label-md font-label-md flex items-center gap-1.5 transition-colors">
+              <span class="material-symbols-outlined text-[16px]">file_download</span>
+              Download CSV
+            </button>
+<button class="px-2 py-1 bg-surface-container-lowest border border-outline-variant/60 rounded text-on-surface font-semibold hover:bg-surface-container-low">Next</button>
+</div>
+</div>
+</section>
+<!-- APPEND-ONLY AUDIT LOG (Bottom section) -->
+<section class="bg-surface-container-lowest rounded border border-outline-variant/60 shadow-sm p-4 space-y-3">
+<div class="flex items-center justify-between border-b border-outline-variant/30 pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-tertiary">history</span>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface">
+              Append-only Audit Log
+            </h3>
+<span class="font-code-sm text-code-sm text-primary bg-primary-fixed/40 px-2 py-0.5 rounded border border-primary/20">
+              tx_88f92a01ce9b4728
+            </span>
+</div>
+<span class="font-code-sm text-[11px] text-outline">SHA-256 Merkle Verification Valid</span>
+</div>
+          <!-- Timeline Events -->
+          <div id="audit-timeline-container" class="space-y-2.5 font-body-sm text-body-sm pt-1">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                <span class="font-medium text-on-surface">Evaluation completed</span>
+                <span class="text-outline-variant">—</span>
+                <span class="font-code-sm text-code-sm text-on-surface-variant">18 Sep 2026 · 14:32</span>
+              </div>
+              <span class="font-code-sm text-code-sm bg-surface-container-low px-2 py-0.5 rounded border border-outline-variant/40 text-on-surface">
+                Actor: System (Deterministic Engine)
+              </span>
+            </div>
+          </div>
+        </section>
+      </main>
+      <!-- ==================== CONTEXTUAL RIGHT DRAWER (Attio/Linear Style) ==================== -->
+      <aside id="student-drawer" class="w-[430px] border-l border-outline-variant/60 bg-surface-container-lowest flex flex-col shrink-0 shadow-lg z-20">
+        <!-- Drawer Header -->
+        <div class="h-14 px-5 border-b border-outline-variant/40 flex items-center justify-between bg-surface-container-low/30">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px] text-primary">biotech</span>
+            <span class="font-headline-sm text-headline-sm font-bold text-on-surface">
+              Student Evidence Inspection
+            </span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Print Record">
+              <span class="material-symbols-outlined text-[18px]">print</span>
+            </button>
+          </div>
+        </div>
+        <!-- Drawer Content Viewport -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-5">
+          <!-- Student Identity Card -->
+          <div class="p-3.5 bg-surface rounded border border-outline-variant/40 space-y-2">
+            <div class="flex items-start justify-between">
+              <div>
+                <h3 id="drawer-student-name" class="font-headline-md text-headline-md font-bold text-on-surface">Rahul Kumar</h3>
+                <div id="drawer-student-id" class="font-code-sm text-code-sm text-primary font-medium mt-0.5">ID: S002 · SIS-UID-88192</div>
+              </div>
+              <span id="drawer-status-pill" class="px-2 py-0.5 rounded font-label-sm text-label-sm bg-rose-100 text-rose-800 font-bold border border-rose-200">
+                AFFECTED
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-outline-variant/30 text-body-sm font-body-sm">
+              <div>
+                <span class="text-outline text-xs block">Department</span>
+                <span class="font-semibold text-on-surface">Computer Science (CSE)</span>
+              </div>
+              <div>
+                <span class="text-outline text-xs block">Semester</span>
+                <span class="font-semibold text-on-surface">S5 · Fall 2026</span>
+              </div>
+              <div class="col-span-2">
+                <span class="text-outline text-xs block">Target Course Clause</span>
+                <span class="font-semibold text-on-surface">CS-502 — Operating Systems</span>
+              </div>
+            </div>
+          </div>
+          <!-- Compliance Gap Diagnostic -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between font-label-md text-label-md">
+              <span class="font-semibold text-on-surface">COMPLIANCE GAP</span>
+              <span id="drawer-gap-diff" class="text-rose-600 font-bold">3.0% Deficit</span>
+            </div>
+            <div class="p-3 bg-surface-container-low rounded border border-outline-variant/40 space-y-2">
+              <div class="flex items-baseline justify-between">
+                <div>
+                  <span class="text-xs text-outline block">Current Recorded</span>
+                  <span id="drawer-recorded-val" class="font-headline-sm text-headline-sm font-bold text-rose-600">77.0%</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs text-outline block">Required Regulation</span>
+                  <span id="drawer-required-val" class="font-headline-sm text-headline-sm font-bold text-on-surface">80.0%</span>
+                </div>
+              </div>
+              <!-- Visual Deficit Progress Gauge -->
+              <div class="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden relative">
+                <div id="drawer-progress-bar" class="bg-rose-500 h-full rounded-full" style="width: 77%"></div>
+                <!-- Target 80% marker line -->
+                <div class="absolute top-0 bottom-0 w-0.5 bg-primary z-10" style="left: 80%"></div>
+              </div>
+              <p id="drawer-gap-desc" class="font-body-sm text-body-sm text-rose-700 font-medium">
+                3 percentage points below threshold for semester examination qualification.
+              </p>
+            </div>
+          </div>
+          <!-- Technical Deterministic Calculation Callout -->
+          <div class="space-y-2">
+            <span class="font-label-md text-label-md font-semibold text-on-surface">
+              DETERMINISTIC EVALUATION
+            </span>
+            <div class="p-3.5 bg-inverse-surface rounded text-inverse-on-surface space-y-2 shadow-inner">
+              <div class="flex items-center justify-between text-xs text-outline-variant font-code-sm">
+                <span>EXPRESSION EVALUATOR</span>
+                <span class="text-emerald-400">PASSED DETERMINISTIC ENGINE</span>
+              </div>
+              <div id="drawer-calc-display" class="bg-black/30 p-2.5 rounded border border-white/10 font-code-md text-code-md text-rose-400 font-semibold">
+                77.0 &gt;= 80.0 → FALSE
+              </div>
+              <p class="font-code-sm text-[11px] text-inverse-on-surface/80 leading-relaxed">
+                Deterministic boolean result generated by Ripple Core against SIS live attendance ledger.
+              </p>
+              <div class="pt-1">
+                <div id="drawer-calc-status" class="w-full py-1.5 px-2.5 rounded bg-rose-600/20 border border-rose-500/40 text-rose-300 font-label-sm font-bold text-center">
+                  STATUS: AFFECTED (EXAM BARRED)
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Attendance Recovery Calculation Block -->
+          <div id="drawer-recovery-block"></div>
+          <!-- Policy Evidence Citation Block -->
+          <div class="space-y-2">
+            <span class="font-label-md text-label-md font-semibold text-on-surface">
+              POLICY EVIDENCE CITATION
+            </span>
+            <div class="p-3.5 bg-surface rounded border-l-4 border-primary border-t border-r border-b border-outline-variant/40 space-y-2">
+              <blockquote id="drawer-citation-quote" class="font-body-sm text-body-sm italic text-on-surface leading-relaxed">
+                "Section 3.2: ...all undergraduate students registered in Semester 5 onward must maintain a cumulative physical attendance of not less than 80.0%..."
+              </blockquote>
+              <div class="flex items-center justify-between pt-1 border-t border-outline-variant/30">
+                <span id="drawer-citation-cite" class="font-code-sm text-code-sm text-primary font-semibold">Academic Reg 2026, §3.2 · Pg 4</span>
+                <span class="material-symbols-outlined text-[15px] text-primary">verified</span>
+              </div>
+            </div>
+          </div>
+          <!-- Action & Recommendation -->
+          <div class="space-y-3 pt-2">
+            <span class="font-label-md text-label-md font-semibold text-on-surface">
+              ACTION &amp; RECOMMENDATION
+            </span>
+            <div class="space-y-1.5">
+              <label class="font-label-sm text-label-sm text-on-surface-variant block">
+                Personalized Administrative Notice
+              </label>
+              <textarea id="drawer-admin-note" class="w-full p-2.5 text-body-sm font-body-sm bg-surface border border-outline-variant/60 rounded focus:border-primary focus:ring-1 focus:ring-primary" rows="3">Review eligibility under the revised attendance requirement and initiate academic counseling alert.</textarea>
+            </div>
+            <!-- Non-editable outcome integrity notice -->
+            <div class="flex items-start gap-2 p-2 bg-surface-container-low rounded border border-outline-variant/30 text-on-surface-variant">
+              <span class="material-symbols-outlined text-[16px] text-tertiary mt-0.5">lock</span>
+              <p class="font-body-sm text-[11px] leading-tight">
+                Calculated outcome is deterministic and non-editable. Notice dispatch grounded in verified audit trail.
+              </p>
+            </div>
+            <!-- Action Buttons -->
+            <div class="flex flex-col gap-2 pt-1">
+              <button id="btn-drawer-notify" class="w-full h-8 px-3 rounded bg-primary text-on-primary hover:bg-primary-container text-label-md font-label-md font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+                <span class="material-symbols-outlined text-[16px]">send</span>
+                Simulate Official Notice
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+    <!-- UPLOAD POLICY MODAL -->
+    <div id="upload-policy-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+      <div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl shadow-2xl w-full max-w-lg p-6 space-y-5">
+        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[22px]">upload_file</span>
+            <h2 class="font-headline-sm font-bold text-on-surface">Upload or Select Policy Document</h2>
+          </div>
+          <button id="btn-close-modal" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <label class="block font-label-md font-semibold text-on-surface mb-1.5">Option A: 1-Click Pre-packaged Sample</label>
+            <div class="flex gap-2">
+              <select id="sample-policy-select" class="flex-1 text-body-sm font-body-sm bg-surface border border-outline-variant/60 rounded px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary"></select>
+              <button id="btn-load-sample-confirm" class="h-9 px-4 rounded bg-primary text-on-primary hover:bg-primary-container text-label-md font-semibold transition-colors">Load</button>
+            </div>
+          </div>
+          <div class="relative flex py-1 items-center">
+            <div class="flex-grow border-t border-outline-variant/30"></div>
+            <span class="flex-shrink mx-3 text-xs text-outline uppercase font-code-sm">Or Upload Custom Policy</span>
+            <div class="flex-grow border-t border-outline-variant/30"></div>
+          </div>
+          <div>
+            <label class="block font-label-md font-semibold text-on-surface mb-1.5">Option B: Upload PDF or TXT</label>
+            <input id="policy-file-input" type="file" accept=".pdf,.txt" class="block w-full text-body-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-label-md file:font-semibold file:bg-primary-fixed file:text-on-primary-fixed hover:file:bg-primary-fixed-dim cursor-pointer border border-outline-variant/40 rounded p-1 bg-surface" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULATED NOTIFICATION DISPATCH MODAL -->
+    <div id="notification-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+      <div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl shadow-2xl w-full max-w-xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[22px]">mark_email_read</span>
+            <h2 class="font-headline-sm font-bold text-on-surface">Simulated Student Notification Dispatch</h2>
+          </div>
+          <button id="btn-close-notif-modal" class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        <div id="notification-modal-content"></div>
+        <div class="flex justify-end pt-2">
+          <button onclick="document.getElementById('notification-modal').classList.add('hidden')" class="h-8 px-4 rounded bg-surface border border-outline-variant/60 hover:bg-surface-container-low text-on-surface text-label-md font-semibold transition-colors">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/app.js?v=2.0"></script>
+  </body>
+</html>
