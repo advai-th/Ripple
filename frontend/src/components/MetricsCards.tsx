@@ -3,112 +3,97 @@ import type { CohortSummary } from '../types';
 
 interface MetricsCardsProps {
   summary: CohortSummary | null;
-  onSelectTab: (tab: 'ALL' | 'AFFECTED' | 'AT_RISK' | 'UNAFFECTED') => void;
-  activeTab: 'ALL' | 'AFFECTED' | 'AT_RISK' | 'UNAFFECTED';
+  onOpenReviewModal?: () => void;
+  activePoliciesCount?: number;
 }
 
-export const MetricsCards: React.FC<MetricsCardsProps> = ({ summary, onSelectTab, activeTab }) => {
-  const total = summary?.total_evaluated || 500;
+export const MetricsCards: React.FC<MetricsCardsProps> = ({
+  summary,
+  onOpenReviewModal,
+  activePoliciesCount = 4,
+}) => {
+  const total = summary?.total_evaluated || 0;
   const affected = summary?.affected_count || 0;
-  const affectedPct = summary?.affected_percentage?.toFixed(1) || '0.0';
   const atRisk = summary?.at_risk_count || 0;
-  const atRiskPct = summary?.at_risk_percentage?.toFixed(1) || '0.0';
-  const unaffected = summary?.unaffected_count || total - (affected + atRisk);
-  const unaffectedPct = ((unaffected / total) * 100).toFixed(1);
+  const unaffected = total - affected - atRisk;
+  const complianceRate = total > 0 ? Math.round((unaffected / total) * 100) : 0;
+
+  const cards = [
+    {
+      label: 'Active Policies',
+      value: activePoliciesCount,
+      sub: 'Loaded & evaluated',
+      subColor: 'text-slate-400',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      ),
+      iconBg: 'bg-blue-50 text-[#3B4F7A]',
+      accent: 'border-l-4 border-l-[#3B4F7A]',
+    },
+    {
+      label: 'Students Evaluated',
+      value: total.toLocaleString(),
+      sub: 'Current active cohort',
+      subColor: 'text-slate-400',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      ),
+      iconBg: 'bg-slate-100 text-slate-600',
+      accent: 'border-l-4 border-l-slate-400',
+    },
+    {
+      label: 'Non-Compliant',
+      value: affected,
+      sub: `${atRisk} approaching threshold`,
+      subColor: 'text-amber-600',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      ),
+      iconBg: 'bg-red-50 text-red-600',
+      accent: 'border-l-4 border-l-red-500',
+    },
+    {
+      label: 'Compliance Rate',
+      value: `${complianceRate}%`,
+      sub: 'Require attention → ',
+      subAction: onOpenReviewModal,
+      subColor: 'text-[#3B4F7A] font-semibold cursor-pointer hover:underline',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      ),
+      iconBg: 'bg-emerald-50 text-emerald-700',
+      accent: 'border-l-4 border-l-emerald-500',
+    },
+  ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 py-4">
-      {/* 1. Affected Students */}
-      <div
-        onClick={() => onSelectTab('AFFECTED')}
-        className={`bg-surface-container-lowest p-4 rounded-xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
-          activeTab === 'AFFECTED' ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-outline-variant/60'
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold tracking-wider uppercase text-rose-700">Affected Students</span>
-          <span className="w-7 h-7 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 border border-rose-200">
-            <span className="material-symbols-outlined text-[16px]">dangerous</span>
-          </span>
+    <section className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+      {cards.map((card, i) => (
+        <div key={i} className={`bg-white rounded-lg p-4 shadow-sm border border-slate-100 ${card.accent} flex items-start justify-between gap-3`}>
+          <div className="flex-1 min-w-0">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{card.label}</span>
+            <div className="text-2xl font-bold text-slate-900 mt-0.5">{card.value}</div>
+            {card.subAction ? (
+              <button onClick={card.subAction} className={`text-[11px] mt-1 ${card.subColor}`}>
+                {card.sub}
+              </button>
+            ) : (
+              <span className={`text-[11px] mt-1 block ${card.subColor}`}>{card.sub}</span>
+            )}
+          </div>
+          <div className={`w-8 h-8 rounded-lg ${card.iconBg} flex items-center justify-center shrink-0`}>
+            {card.icon}
+          </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-headline font-bold text-on-surface">{affected}</span>
-          <span className="text-xs font-semibold text-rose-600">({affectedPct}%)</span>
-        </div>
-        <div className="mt-2 text-[11px] text-on-surface-variant flex items-center gap-1 font-medium">
-          <span className="material-symbols-outlined text-[14px] text-rose-500">trending_up</span>
-          <span>Fails qualification threshold</span>
-        </div>
-      </div>
-
-      {/* 2. At Risk Students */}
-      <div
-        onClick={() => onSelectTab('AT_RISK')}
-        className={`bg-surface-container-lowest p-4 rounded-xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
-          activeTab === 'AT_RISK' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-outline-variant/60'
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold tracking-wider uppercase text-amber-800">At-Risk Buffer</span>
-          <span className="w-7 h-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-700 border border-amber-200">
-            <span className="material-symbols-outlined text-[16px]">warning</span>
-          </span>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-headline font-bold text-on-surface">{atRisk}</span>
-          <span className="text-xs font-semibold text-amber-700">({atRiskPct}%)</span>
-        </div>
-        <div className="mt-2 text-[11px] text-on-surface-variant flex items-center gap-1 font-medium">
-          <span className="material-symbols-outlined text-[14px] text-amber-600">info</span>
-          <span>Within 5% safety margin</span>
-        </div>
-      </div>
-
-      {/* 3. Compliant / Unaffected */}
-      <div
-        onClick={() => onSelectTab('UNAFFECTED')}
-        className={`bg-surface-container-lowest p-4 rounded-xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
-          activeTab === 'UNAFFECTED' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-outline-variant/60'
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold tracking-wider uppercase text-emerald-800">Compliant</span>
-          <span className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-700 border border-emerald-200">
-            <span className="material-symbols-outlined text-[16px]">verified</span>
-          </span>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-headline font-bold text-on-surface">{unaffected}</span>
-          <span className="text-xs font-semibold text-emerald-700">({unaffectedPct}%)</span>
-        </div>
-        <div className="mt-2 text-[11px] text-on-surface-variant flex items-center gap-1 font-medium">
-          <span className="material-symbols-outlined text-[14px] text-emerald-600">check_circle</span>
-          <span>Safely satisfies policy criteria</span>
-        </div>
-      </div>
-
-      {/* 4. Total Evaluated Cohort */}
-      <div
-        onClick={() => onSelectTab('ALL')}
-        className={`bg-surface-container-lowest p-4 rounded-xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${
-          activeTab === 'ALL' ? 'border-primary ring-2 ring-primary/20' : 'border-outline-variant/60'
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold tracking-wider uppercase text-on-surface">Total Cohort</span>
-          <span className="w-7 h-7 rounded-full bg-primary-fixed flex items-center justify-center text-primary border border-primary/20">
-            <span className="material-symbols-outlined text-[16px]">groups</span>
-          </span>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-headline font-bold text-on-surface">{total}</span>
-          <span className="text-xs font-semibold text-primary">Students</span>
-        </div>
-        <div className="mt-2 text-[11px] text-on-surface-variant flex items-center gap-1 font-medium">
-          <span className="material-symbols-outlined text-[14px] text-primary">sync</span>
-          <span>100% Deterministic evaluation</span>
-        </div>
-      </div>
-    </div>
+      ))}
+    </section>
   );
 };

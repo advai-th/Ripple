@@ -5,217 +5,154 @@ interface StudentTableProps {
   students: ImpactResult[];
   selectedStudent: ImpactResult | null;
   onSelectStudent: (student: ImpactResult) => void;
-  activeTab: 'ALL' | 'AFFECTED' | 'AT_RISK' | 'UNAFFECTED';
-  onSelectTab: (tab: 'ALL' | 'AFFECTED' | 'AT_RISK' | 'UNAFFECTED') => void;
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  counts: { all: number; affected: number; atRisk: number; unaffected: number };
-  onExportCSV: () => void;
+  onExportCSV?: () => void;
 }
+
+const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  if (status === 'UNAFFECTED') {
+    return (
+      <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded text-[11px] border border-emerald-200">
+        <span className="w-1 h-1 rounded-full bg-emerald-500"></span> Compliant
+      </span>
+    );
+  }
+  if (status === 'AT_RISK') {
+    return (
+      <span className="inline-flex items-center gap-1 text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded text-[11px] border border-amber-200">
+        <span className="w-1 h-1 rounded-full bg-amber-500"></span> At Risk
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-red-700 font-semibold bg-red-50 px-2 py-0.5 rounded text-[11px] border border-red-200">
+      <span className="w-1 h-1 rounded-full bg-red-500"></span> Non-Compliant
+    </span>
+  );
+};
+
+const getInitials = (name: string) =>
+  name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
+
+const AVATAR_COLORS = [
+  'bg-blue-600', 'bg-violet-600', 'bg-teal-600', 'bg-orange-600', 'bg-slate-600', 'bg-indigo-600',
+];
 
 export const StudentTable: React.FC<StudentTableProps> = ({
   students,
   selectedStudent,
   onSelectStudent,
-  activeTab,
-  onSelectTab,
-  searchQuery,
-  onSearchChange,
-  counts,
   onExportCSV,
 }) => {
   return (
-    <div className="flex-1 flex flex-col bg-surface-container-lowest border-t border-outline-variant/50 min-h-0">
-      {/* Table Controls */}
-      <div className="px-6 py-3 border-b border-outline-variant/40 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-outline-variant/40 w-full sm:w-auto">
-          <button
-            onClick={() => onSelectTab('ALL')}
-            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-              activeTab === 'ALL' ? 'bg-surface-container-lowest shadow-sm text-on-surface' : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            All Students ({counts.all})
-          </button>
-          <button
-            onClick={() => onSelectTab('AFFECTED')}
-            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-              activeTab === 'AFFECTED' ? 'bg-rose-50 text-rose-800 border border-rose-200 shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            Affected ({counts.affected})
-          </button>
-          <button
-            onClick={() => onSelectTab('AT_RISK')}
-            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-              activeTab === 'AT_RISK' ? 'bg-amber-50 text-amber-900 border border-amber-200 shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            At Risk ({counts.atRisk})
-          </button>
-          <button
-            onClick={() => onSelectTab('UNAFFECTED')}
-            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-              activeTab === 'UNAFFECTED' ? 'bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            Unaffected ({counts.unaffected})
-          </button>
+    <div className="bg-white rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+      {/* Table Header */}
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900">Evaluation Ledger</h3>
+          <p className="text-[11px] text-slate-400 mt-0.5">Deterministic compliance results · Click any row for evidence</p>
         </div>
-
-        {/* Search & Export */}
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline">
-              search
-            </span>
-            <input
-              type="text"
-              placeholder="Search student ID, name..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-surface border border-outline-variant/60 rounded-md text-xs text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-            />
-          </div>
-
+        <div className="flex items-center gap-1.5">
           <button
             onClick={onExportCSV}
-            className="px-3 py-1.5 bg-surface hover:bg-surface-container border border-outline-variant/60 rounded-md text-xs font-semibold text-on-surface flex items-center gap-1.5 transition-colors shrink-0 shadow-sm"
+            className="px-2.5 py-1.5 rounded border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5 text-xs font-medium"
+            title="Export as CSV"
           >
-            <span className="material-symbols-outlined text-[16px]">download</span>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            </svg>
             Export CSV
           </button>
         </div>
       </div>
 
-      {/* Table Container */}
-      <div className="flex-1 overflow-auto">
+      {/* Table */}
+      <div className="overflow-x-auto overflow-y-auto max-h-[440px]">
         <table className="w-full text-left text-xs border-collapse">
-          <thead className="bg-surface sticky top-0 z-10 border-b border-outline-variant/60">
-            <tr className="h-9 text-outline uppercase font-semibold text-[11px] tracking-wider">
-              <th className="pl-6 pr-3 w-10">
-                <span className="sr-only">Select</span>
-              </th>
-              <th className="px-3 font-semibold">Student</th>
-              <th className="px-3 font-semibold">Course</th>
-              <th className="px-3 font-semibold">Recorded</th>
-              <th className="px-3 font-semibold">Required</th>
-              <th className="px-3 font-semibold">Margin</th>
-              <th className="px-3 font-semibold">Status</th>
-              <th className="px-3 font-semibold">Citations</th>
-              <th className="pr-6 pl-3 text-right font-semibold">Action</th>
+          <thead className="sticky top-0 bg-slate-50 z-10">
+            <tr className="border-b border-slate-200">
+              <th className="px-5 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider w-8">#</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Student</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Course</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Metric</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Required</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Gap</th>
+              <th className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider text-right">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant/30">
+          <tbody className="divide-y divide-slate-100">
             {students.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-12 text-center text-outline">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-[32px] text-outline/50">person_search</span>
-                    <span>No students match the selected filter or search query.</span>
+                <td colSpan={7} className="py-16 text-center text-slate-400">
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                    </svg>
+                    <span className="font-medium text-slate-500">No records match the selected filter</span>
                   </div>
                 </td>
               </tr>
             ) : (
-              students.map((s) => {
+              students.map((s, index) => {
                 const isSelected = selectedStudent?.student_id === s.student_id;
-                const isAffected = s.status === 'AFFECTED';
-                const isAtRisk = s.status === 'AT_RISK';
+                const margin = s.gap ?? s.margin ?? 0;
                 const isGPA = s.field?.toLowerCase().includes('gpa');
                 const unit = isGPA ? '' : '%';
-                const decimals = isGPA ? 2 : 1;
-
-                const recordedDisplay = Number(s.actual_value || 0).toFixed(decimals);
-                const requiredDisplay = Number(s.required_value || 0).toFixed(decimals);
-                const gapVal = Number(s.gap ?? s.margin ?? (Number(s.actual_value || 0) - Number(s.required_value || 0)));
 
                 return (
                   <tr
                     key={s.student_id}
                     onClick={() => onSelectStudent(s)}
-                    className={`h-11 transition-colors cursor-pointer border-l-4 ${
+                    className={`cursor-pointer transition-colors ${
                       isSelected
-                        ? 'bg-primary-fixed/25 hover:bg-primary-fixed/35 border-l-primary'
-                        : 'hover:bg-surface border-l-transparent'
+                        ? 'bg-blue-50/70 border-l-2 border-l-[#3B4F7A]'
+                        : 'hover:bg-slate-50/80'
                     }`}
                   >
-                    <td className="pl-6 pr-3">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => onSelectStudent(s)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded border-outline-variant text-primary focus:ring-0"
-                      />
-                    </td>
-                    <td className="px-3">
+                    {/* Row number */}
+                    <td className="px-5 py-3 text-slate-300 font-medium text-[10px]">{index + 1}</td>
+
+                    {/* Student */}
+                    <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-on-surface">{s.display_name}</span>
-                        <span className="font-code text-[11px] text-on-surface-variant bg-surface px-1.5 py-0.5 rounded border border-outline-variant/40">
-                          {s.student_id}
-                        </span>
-                        <span className="text-[11px] text-outline">CSE · S5</span>
+                        <div className={`w-6 h-6 rounded ${AVATAR_COLORS[index % AVATAR_COLORS.length]} text-white font-bold text-[10px] flex items-center justify-center shrink-0`}>
+                          {getInitials(s.display_name)}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-slate-800 block">{s.display_name}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">{s.student_id}</span>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-3 font-code text-on-surface-variant font-medium">
-                      {s.course_id || 'CS-502'}
+
+                    {/* Course */}
+                    <td className="px-3 py-3">
+                      <span className="font-mono text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">{s.course_id || 'CS-502'}</span>
                     </td>
-                    <td
-                      className={`px-3 font-bold font-code ${
-                        isAffected ? 'text-rose-600' : isAtRisk ? 'text-amber-700' : 'text-on-surface'
-                      }`}
-                    >
-                      {recordedDisplay}{unit}
-                    </td>
-                    <td className="px-3 font-code font-medium text-on-surface">
-                      {requiredDisplay}{unit}
-                    </td>
-                    <td className="px-3 font-code">
-                      {gapVal < 0 ? (
-                        <span className="font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
-                          {gapVal.toFixed(decimals)}{unit}
-                        </span>
-                      ) : (
-                        <span className="font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                          +{gapVal.toFixed(decimals)}{unit}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3">
-                      {isAffected ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-rose-100 text-rose-800 font-bold border border-rose-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
-                          AFFECTED
-                        </span>
-                      ) : isAtRisk ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-amber-100 text-amber-800 font-semibold border border-amber-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
-                          AT RISK
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                          UNAFFECTED
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectStudent(s);
-                        }}
-                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-semibold"
-                      >
-                        <span className="material-symbols-outlined text-[13px]">link</span>
-                        Citation
-                      </button>
-                    </td>
-                    <td className="pr-6 pl-3 text-right">
-                      <span className="text-[11px] text-primary font-bold hover:underline cursor-pointer">
-                        {isAffected ? 'Inspect Notice' : isAtRisk ? 'Review Margin' : 'View Record'}
+
+                    {/* Metric value */}
+                    <td className="px-3 py-3">
+                      <span className={`font-bold font-mono ${s.status === 'AFFECTED' ? 'text-red-700' : s.status === 'AT_RISK' ? 'text-amber-700' : 'text-slate-800'}`}>
+                        {s.actual_value}{unit}
                       </span>
+                    </td>
+
+                    {/* Required */}
+                    <td className="px-3 py-3 text-slate-500 font-mono text-[11px]">{s.required_value}{unit}</td>
+
+                    {/* Gap */}
+                    <td className="px-3 py-3 font-mono font-semibold text-[11px]">
+                      {margin > 0 ? (
+                        <span className="text-emerald-600">+{margin}</span>
+                      ) : margin < 0 ? (
+                        <span className="text-red-600">{margin}</span>
+                      ) : (
+                        <span className="text-slate-400">0.0</span>
+                      )}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-3 py-3 text-right">
+                      <StatusBadge status={s.status} />
                     </td>
                   </tr>
                 );

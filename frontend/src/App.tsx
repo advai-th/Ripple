@@ -10,12 +10,15 @@ import type {
   ToastMessage 
 } from './types';
 
+import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
-import { Stepper } from './components/Stepper';
-import { PolicyBanner } from './components/PolicyBanner';
+import { SubNavTabs } from './components/SubNavTabs';
 import { MetricsCards } from './components/MetricsCards';
+import { ImpactTrendChart } from './components/ImpactTrendChart';
 import { StudentTable } from './components/StudentTable';
+import { ImpactBreakdownCard } from './components/ImpactBreakdownCard';
 import { EvidenceDrawer } from './components/EvidenceDrawer';
+import { PipelineStages } from './components/PipelineStages';
 import { HumanReviewModal } from './components/HumanReviewModal';
 import { NotificationModal } from './components/NotificationModal';
 import { AuditDrawer } from './components/AuditDrawer';
@@ -26,16 +29,16 @@ export function App() {
   const [samples, setSamples] = useState<PolicySample[]>([]);
   const [selectedSampleKey, setSelectedSampleKey] = useState<string>('');
   const [currentPolicyTitle, setCurrentPolicyTitle] = useState<string>('');
-  const [currentFilename, setCurrentFilename] = useState<string>('');
-  const [currentStage, setCurrentStage] = useState<number>(1);
+  const [currentStage, setCurrentStage] = useState<number>(0);
 
   const [extractedRule, setExtractedRule] = useState<ExtractedRule | null>(null);
   const [summary, setSummary] = useState<CohortSummary | null>(null);
   const [allStudents, setAllStudents] = useState<ImpactResult[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<ImpactResult | null>(null);
 
-  // Filters
-  const [activeTab, setActiveTab] = useState<'ALL' | 'AFFECTED' | 'AT_RISK' | 'UNAFFECTED'>('ALL');
+  // Navigation & Cohort Filter Tabs
+  const [activeNavTab, setActiveNavTab] = useState<string>('value_comparison');
+  const [activeCohortTab, setActiveCohortTab] = useState<'ALL' | 'AFFECTED' | 'AT_RISK' | 'UNAFFECTED'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modals & Drawers
@@ -86,25 +89,24 @@ export function App() {
     try {
       setIsEvaluating(true);
       setSelectedSampleKey(sampleKey);
-      setCurrentStage(1); // Upload
+      setCurrentStage(1);
 
       const detail = await api.getSampleContent(sampleKey);
       setCurrentPolicyTitle(detail.title);
-      setCurrentFilename(detail.filename);
 
-      setCurrentStage(2); // AI Analysis
+      setCurrentStage(2);
       const extractRes = await api.extractRule(detail.content, detail.filename);
       const rule = extractRes.extracted_rule;
       setExtractedRule(rule);
 
-      setCurrentStage(3); // Human Review
+      setCurrentStage(3);
       const confirmRes = await api.confirmRule(rule.rule_id);
       setExtractedRule(confirmRes.rule);
 
-      setCurrentStage(4); // Validate
+      setCurrentStage(4);
       const analysis = await api.runAnalysis(rule.rule_id);
 
-      setCurrentStage(5); // Impact
+      setCurrentStage(7);
       setSummary(analysis.summary);
       setAllStudents(analysis.all_results || []);
 
@@ -120,7 +122,7 @@ export function App() {
       setAuditEntries(logs);
 
       showToast(
-        `Analysis complete: ${analysis.summary.affected_count} affected, ${analysis.summary.at_risk_count} at-risk.`,
+        `Pipeline complete: ${analysis.summary.affected_count} non-compliant, ${analysis.summary.at_risk_count} at risk.`,
         'success'
       );
     } catch (err: any) {
@@ -137,16 +139,14 @@ export function App() {
       setCurrentStage(1);
       const uploadRes = await api.uploadPolicy(file);
       setCurrentPolicyTitle(file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' '));
-      setCurrentFilename(uploadRes.filename);
 
       setCurrentStage(2);
       const extractRes = await api.extractRule(uploadRes.text, uploadRes.filename);
       setExtractedRule(extractRes.extracted_rule);
 
       setCurrentStage(3);
-      // Open review modal for human verification
       setIsReviewModalOpen(true);
-      showToast('Policy uploaded & parsed. Please review rule criteria.', 'info');
+      showToast('Policy uploaded & parsed. Please verify the extracted rule criteria.', 'info');
     } catch (err: any) {
       showToast(`Upload failed: ${err.message}`, 'error');
     } finally {
@@ -160,14 +160,15 @@ export function App() {
     try {
       setIsEvaluating(true);
       setIsReviewModalOpen(false);
+      setCurrentStage(4);
 
       const confirmRes = await api.confirmRule(extractedRule.rule_id, overrides);
       setExtractedRule(confirmRes.rule);
 
-      setCurrentStage(4);
+      setCurrentStage(5);
       const analysis = await api.runAnalysis(confirmRes.rule.rule_id);
 
-      setCurrentStage(5);
+      setCurrentStage(7);
       setSummary(analysis.summary);
       setAllStudents(analysis.all_results || []);
 
@@ -181,7 +182,7 @@ export function App() {
       setAuditEntries(logs);
 
       showToast(
-        `Rule verified and evaluated: ${analysis.summary.affected_count} students affected.`,
+        `Rule confirmed: ${analysis.summary.affected_count} students non-compliant.`,
         'success'
       );
     } catch (err: any) {
@@ -193,10 +194,11 @@ export function App() {
 
   // Trigger Notification Simulation
   const handleOpenNotifications = async () => {
-    if (!selectedStudent || !extractedRule) return;
+    if (!extractedRule) return;
     try {
       setIsNotificationModalOpen(true);
-      const res = await api.simulateNotification(extractedRule.rule_id, [selectedStudent.student_id]);
+      const targetId = selectedStudent ? selectedStudent.student_id : 'S002';
+      const res = await api.simulateNotification(extractedRule.rule_id, [targetId]);
       if (res.preview && res.preview.length > 0) {
         setNotificationPreview(res.preview[0]);
       }
@@ -212,7 +214,7 @@ export function App() {
       setIsDispatching(false);
       setIsNotificationModalOpen(false);
       showToast(
-        `Notice dispatched to ${selectedStudent?.display_name} across Email, SMS, and Advisor queues.`,
+        `Notices dispatched to ${selectedStudent?.display_name || 'Cohort'} via Email, SMS, and Advisor queue.`,
         'success'
       );
     }, 600);
@@ -226,16 +228,9 @@ export function App() {
     }
 
     const headers = [
-      'Student ID',
-      'Name',
-      'Course',
-      'Field',
-      'Actual Value',
-      'Required Value',
-      'Margin',
-      'Status',
-      'Future Sessions Needed',
-      'Proof Calculation',
+      'Student ID', 'Name', 'Course', 'Field',
+      'Actual Value', 'Required Value', 'Margin',
+      'Status', 'Future Sessions Needed', 'Proof Calculation',
     ];
 
     const rows = allStudents.map((s) => [
@@ -256,22 +251,20 @@ export function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `ripple_impact_analysis_${extractedRule?.rule_id || 'export'}.csv`);
+    link.setAttribute('download', `ripple_evaluation_${extractedRule?.rule_id || 'export'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Cohort evaluation ledger exported to CSV.', 'success');
+    showToast('Evaluation ledger exported to CSV.', 'success');
   };
 
   // Filtered Students
   const filteredStudents = useMemo(() => {
     return allStudents.filter((s) => {
-      // Tab filter
-      if (activeTab === 'AFFECTED' && s.status !== 'AFFECTED') return false;
-      if (activeTab === 'AT_RISK' && s.status !== 'AT_RISK') return false;
-      if (activeTab === 'UNAFFECTED' && s.status !== 'UNAFFECTED') return false;
+      if (activeCohortTab === 'AFFECTED' && s.status !== 'AFFECTED') return false;
+      if (activeCohortTab === 'AT_RISK' && s.status !== 'AT_RISK') return false;
+      if (activeCohortTab === 'UNAFFECTED' && s.status !== 'UNAFFECTED') return false;
 
-      // Query filter
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase();
         const matchesId = s.student_id.toLowerCase().includes(q);
@@ -281,7 +274,7 @@ export function App() {
       }
       return true;
     });
-  }, [allStudents, activeTab, searchQuery]);
+  }, [allStudents, activeCohortTab, searchQuery]);
 
   const counts = useMemo(() => {
     return {
@@ -293,60 +286,104 @@ export function App() {
   }, [allStudents]);
 
   return (
-    <div className="h-screen flex flex-col bg-surface overflow-hidden">
-      {/* 1. Header */}
-      <Header onOpenAudit={async () => {
-        const logs = await api.getAuditLogs(15);
-        setAuditEntries(logs);
-        setIsAuditDrawerOpen(true);
-      }} />
-
-      {/* 2. 5-Stage Stepper */}
-      <Stepper currentStage={currentStage} />
-
-      {/* 3. Active Policy Banner */}
-      <PolicyBanner
-        currentPolicyTitle={currentPolicyTitle}
-        currentFilename={currentFilename}
-        extractedRule={extractedRule}
-        samples={samples}
-        selectedSampleKey={selectedSampleKey}
-        isEvaluating={isEvaluating}
-        onSelectSample={loadPolicyScenario}
-        onUploadFile={handleUploadFile}
+    <div className="h-screen w-screen flex flex-row overflow-hidden bg-[#F0F2F7] text-slate-700 antialiased">
+      {/* Sidebar */}
+      <Sidebar
+        onOpenAudit={async () => {
+          const logs = await api.getAuditLogs(20);
+          setAuditEntries(logs);
+          setIsAuditDrawerOpen(true);
+        }}
+        onOpenNotifications={handleOpenNotifications}
         onOpenReviewModal={() => setIsReviewModalOpen(true)}
-        onRunAnalysis={() => extractedRule && handleConfirmRule({})}
+        activePoliciesCount={samples.length || 4}
       />
 
-      {/* 4. Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        {/* KPI Metrics */}
-        <MetricsCards
-          summary={summary}
-          activeTab={activeTab}
-          onSelectTab={setActiveTab}
+      {/* Main Dashboard */}
+      <main className="flex-1 h-full flex flex-col overflow-hidden min-w-0">
+        
+        {/* Top Header */}
+        <Header
+          samples={samples}
+          selectedSampleKey={selectedSampleKey}
+          onSelectSample={loadPolicyScenario}
+          isEvaluating={isEvaluating}
+          onUploadFile={handleUploadFile}
+          onOpenReviewModal={() => setIsReviewModalOpen(true)}
+          onOpenAudit={async () => {
+            const logs = await api.getAuditLogs(20);
+            setAuditEntries(logs);
+            setIsAuditDrawerOpen(true);
+          }}
+          onOpenNotifications={handleOpenNotifications}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          extractedRule={extractedRule}
+          currentPolicyTitle={currentPolicyTitle}
         />
 
-        {/* Workspace: Table + Evidence Drawer */}
-        <div className="flex-1 flex min-h-0 overflow-hidden">
-          <StudentTable
-            students={filteredStudents}
-            selectedStudent={selectedStudent}
-            onSelectStudent={setSelectedStudent}
-            activeTab={activeTab}
-            onSelectTab={setActiveTab}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            counts={counts}
-            onExportCSV={handleExportCSV}
+        {/* Sub-Navigation */}
+        <SubNavTabs
+          activeNavTab={activeNavTab}
+          onSelectNavTab={setActiveNavTab}
+          activeCohortTab={activeCohortTab}
+          onSelectCohortTab={setActiveCohortTab}
+          counts={counts}
+          onOpenReviewModal={() => setIsReviewModalOpen(true)}
+        />
+
+        {/* Dashboard Body */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          
+          {/* Metrics Row */}
+          <MetricsCards
+            summary={summary}
+            onOpenReviewModal={() => setIsReviewModalOpen(true)}
+            activePoliciesCount={samples.length || 4}
           />
 
-          <EvidenceDrawer
-            student={selectedStudent}
-            onOpenNotifications={handleOpenNotifications}
-          />
+          {/* Main Grid: Left (8 cols) + Right (4 cols) */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+            
+            {/* Left Column: Chart + Table */}
+            <div className="xl:col-span-8 space-y-4 min-w-0">
+              <ImpactTrendChart
+                onExportReport={handleExportCSV}
+                affectedTotal={counts.affected}
+              />
+              <StudentTable
+                students={filteredStudents}
+                selectedStudent={selectedStudent}
+                onSelectStudent={setSelectedStudent}
+                onExportCSV={handleExportCSV}
+              />
+            </div>
+
+            {/* Right Column: Pipeline + Breakdown + Evidence */}
+            <div className="xl:col-span-4 space-y-4 min-w-0">
+              <PipelineStages
+                currentStage={currentStage}
+                isRunning={isEvaluating}
+                policyTitle={currentPolicyTitle}
+                ruleId={extractedRule?.rule_id}
+                confidence={extractedRule?.confidence}
+                onOpenReviewModal={() => setIsReviewModalOpen(true)}
+              />
+              <ImpactBreakdownCard
+                summary={summary}
+                onOpenNotifications={handleOpenNotifications}
+                onOpenReviewModal={() => setIsReviewModalOpen(true)}
+              />
+              <EvidenceDrawer
+                student={selectedStudent}
+                onOpenNotifications={handleOpenNotifications}
+                onOpenReviewModal={() => setIsReviewModalOpen(true)}
+              />
+            </div>
+
+          </div>
         </div>
-      </div>
+      </main>
 
       {/* Modals & Drawers */}
       <HumanReviewModal

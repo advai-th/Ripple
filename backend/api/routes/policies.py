@@ -86,3 +86,21 @@ async def list_sample_policies():
                     "format": "PDF" if f.endswith(".pdf") else "TXT"
                 })
     return samples
+
+
+@router.get("/samples/{sample_key}")
+async def get_sample_policy(sample_key: str):
+    """
+    Returns content and metadata for a specific sample policy.
+    """
+    sample_path = os.path.join(SAMPLE_DIR, sample_key)
+    if not os.path.exists(sample_path):
+        raise HTTPException(status_code=404, detail=f"Sample policy '{sample_key}' not found.")
+    with open(sample_path, "rb") as f:
+        content_bytes = f.read()
+    parsed = parse_document(content_bytes, sample_key)
+    return {
+        "filename": sample_key,
+        "title": sample_key.replace("_", " ").replace(".pdf", "").replace(".txt", "").title(),
+        "content": parsed.content
+    }

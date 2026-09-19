@@ -1,9 +1,5 @@
-import os
-from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 from backend.api.routes import policies, rules, analyses, students, audit, notifications
 
@@ -21,6 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# API Routers
 app.include_router(policies.router)
 app.include_router(rules.router)
 app.include_router(analyses.router)
@@ -28,41 +25,16 @@ app.include_router(students.router)
 app.include_router(audit.router)
 app.include_router(notifications.router)
 
-frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
-stitch_dir = Path(__file__).resolve().parent.parent / "stitch"
-
-if (frontend_dist / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="react_assets")
-
-if stitch_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(stitch_dir)), name="static")
-
-
-@app.get("/favicon.ico")
-async def favicon():
-    logo_file = (frontend_dist / "logo.png") if (frontend_dist / "logo.png").exists() else (stitch_dir / "logo.png")
-    if logo_file.exists():
-        return FileResponse(str(logo_file), media_type="image/png")
-    raise HTTPException(status_code=404, detail="Favicon not found")
-
-
-@app.get("/logo.png")
-async def logo_png():
-    logo_file = (frontend_dist / "logo.png") if (frontend_dist / "logo.png").exists() else (stitch_dir / "logo.png")
-    if logo_file.exists():
-        return FileResponse(str(logo_file), media_type="image/png")
-    raise HTTPException(status_code=404, detail="Logo not found")
-
 
 @app.get("/")
 async def root():
-    react_index = frontend_dist / "index.html"
-    if react_index.exists():
-        return FileResponse(str(react_index))
-    index_file = stitch_dir / "dashboard.html"
-    if index_file.exists():
-        return FileResponse(str(index_file))
-    return {"message": "Welcome to Ripple Engine API."}
+    return {
+        "service": "Ripple Institutional Policy Impact Engine API",
+        "status": "active",
+        "version": "1.0.0",
+        "docs_url": "/docs",
+        "openapi_url": "/openapi.json"
+    }
 
 
 @app.get("/api/health")
