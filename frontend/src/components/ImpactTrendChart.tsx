@@ -62,20 +62,20 @@ export const ImpactTrendChart: React.FC<ImpactTrendChartProps> = ({
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">Compliance Trend</h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">Student cohort status over time</p>
+          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Cohort Trends Over Time</h3>
+          <p className="text-[11px] text-slate-400 mt-0.5">Historical breakdown of students meeting or falling behind policy criteria</p>
           <div className="flex items-center gap-4 mt-2">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-red-500"></span>
-              <span className="text-[11px] text-slate-500">Non-Compliant</span>
+              <span className="text-xs text-slate-600 font-medium">Needs Attention</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>
-              <span className="text-[11px] text-slate-500">At Risk</span>
+              <span className="text-xs text-slate-600 font-medium">Borderline</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-[#3B4F7A]"></span>
-              <span className="text-[11px] text-slate-500">Compliant</span>
+              <span className="text-xs text-slate-600 font-medium">Good Standing</span>
             </div>
           </div>
         </div>

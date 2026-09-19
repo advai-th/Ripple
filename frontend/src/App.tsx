@@ -23,6 +23,7 @@ import { HumanReviewModal } from './components/HumanReviewModal';
 import { NotificationModal } from './components/NotificationModal';
 import { AuditDrawer } from './components/AuditDrawer';
 import { ToastContainer } from './components/ToastContainer';
+import { CohortAnalyticsView } from './components/CohortAnalyticsView';
 
 export function App() {
   // State
@@ -36,8 +37,12 @@ export function App() {
   const [allStudents, setAllStudents] = useState<ImpactResult[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<ImpactResult | null>(null);
 
+  // Batch selection state
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [batchNoticeStudents, setBatchNoticeStudents] = useState<ImpactResult[] | undefined>(undefined);
+
   // Navigation & Cohort Filter Tabs
-  const [activeNavTab, setActiveNavTab] = useState<string>('value_comparison');
+  const [activeNavTab, setActiveNavTab] = useState<string>('roster');
   const [activeCohortTab, setActiveCohortTab] = useState<'ALL' | 'AFFECTED' | 'AT_RISK' | 'UNAFFECTED'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -192,12 +197,45 @@ export function App() {
     }
   };
 
-  // Trigger Notification Simulation
-  const handleOpenNotifications = async () => {
+  // Batch Selection Handlers
+  const handleToggleSelectStudent = (studentId: string) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(studentId) ? prev.filter((id) => id !== studentId) : [...prev, studentId]
+    );
+  };
+
+  const handleSelectAllStudents = () => {
+    if (filteredStudents.length > 0 && selectedStudentIds.length === filteredStudents.length) {
+      setSelectedStudentIds([]);
+    } else {
+      setSelectedStudentIds(filteredStudents.map((s) => s.student_id));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedStudentIds([]);
+  };
+
+  const handleBatchNotify = (students: ImpactResult[]) => {
+    if (!students || students.length === 0) {
+      showToast('No students selected for notification.', 'info');
+      return;
+    }
+    setBatchNoticeStudents(students);
+    setIsNotificationModalOpen(true);
+  };
+
+  // Trigger Notification Simulation (Single or Selected)
+  const handleOpenNotifications = async (student?: ImpactResult) => {
     if (!extractedRule) return;
     try {
+      const target = student || selectedStudent;
+      if (target) {
+        setSelectedStudent(target);
+      }
+      setBatchNoticeStudents(undefined);
       setIsNotificationModalOpen(true);
-      const targetId = selectedStudent ? selectedStudent.student_id : 'S002';
+      const targetId = target ? target.student_id : 'S002';
       const res = await api.simulateNotification(extractedRule.rule_id, [targetId]);
       if (res.preview && res.preview.length > 0) {
         setNotificationPreview(res.preview[0]);
@@ -213,10 +251,16 @@ export function App() {
     setTimeout(() => {
       setIsDispatching(false);
       setIsNotificationModalOpen(false);
+      const isBatch = batchNoticeStudents && batchNoticeStudents.length > 0;
+      const count = isBatch ? batchNoticeStudents.length : 1;
+      const targetName = isBatch
+        ? `${count} students`
+        : (selectedStudent?.display_name || 'student');
       showToast(
-        `Notices dispatched to ${selectedStudent?.display_name || 'Cohort'} via Email, SMS, and Advisor queue.`,
+        `Advisory notices dispatched to ${targetName} via Email, SMS, and Advisor queue.`,
         'success'
       );
+      setBatchNoticeStudents(undefined);
     }, 600);
   };
 
@@ -294,9 +338,15 @@ export function App() {
           setAuditEntries(logs);
           setIsAuditDrawerOpen(true);
         }}
-        onOpenNotifications={handleOpenNotifications}
+        onOpenNotifications={() => handleOpenNotifications()}
+        onOpenAdvisoryNotices={() => {
+          const affected = allStudents.filter((s) => s.status === 'AFFECTED');
+          handleBatchNotify(affected);
+        }}
+        onSelectDashboard={() => setActiveNavTab('roster')}
         onOpenReviewModal={() => setIsReviewModalOpen(true)}
         activePoliciesCount={samples.length || 4}
+        affectedCount={counts.affected}
       />
 
       {/* Main Dashboard */}
@@ -315,7 +365,7 @@ export function App() {
             setAuditEntries(logs);
             setIsAuditDrawerOpen(true);
           }}
-          onOpenNotifications={handleOpenNotifications}
+          onOpenNotifications={() => handleOpenNotifications()}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           extractedRule={extractedRule}
@@ -330,6 +380,7 @@ export function App() {
           onSelectCohortTab={setActiveCohortTab}
           counts={counts}
           onOpenReviewModal={() => setIsReviewModalOpen(true)}
+          threshold={extractedRule?.threshold_value || 75}
         />
 
         {/* Dashboard Body */}
@@ -340,48 +391,80 @@ export function App() {
             summary={summary}
             onOpenReviewModal={() => setIsReviewModalOpen(true)}
             activePoliciesCount={samples.length || 4}
+            onSelectCohortTab={(tab) => {
+              setActiveCohortTab(tab);
+              setActiveNavTab('roster');
+            }}
+            activeCohortTab={activeCohortTab}
           />
 
-          {/* Main Grid: Left (8 cols) + Right (4 cols) */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-            
-            {/* Left Column: Chart + Table */}
-            <div className="xl:col-span-8 space-y-4 min-w-0">
-              <ImpactTrendChart
-                onExportReport={handleExportCSV}
-                affectedTotal={counts.affected}
-              />
-              <StudentTable
-                students={filteredStudents}
-                selectedStudent={selectedStudent}
-                onSelectStudent={setSelectedStudent}
-                onExportCSV={handleExportCSV}
-              />
-            </div>
+          {/* Conditional View: Cohort Analytics Tab vs Student Roster Tab */}
+          {activeNavTab === 'analytics' ? (
+            <CohortAnalyticsView
+              allStudents={allStudents}
+              summary={summary}
+              onExportCSV={handleExportCSV}
+              onSelectCohortTab={(tab) => {
+                setActiveCohortTab(tab);
+                setActiveNavTab('roster');
+              }}
+              onOpenReviewModal={() => setIsReviewModalOpen(true)}
+            />
+          ) : (
+            /* Main Grid: Left (8 cols) + Right (4 cols) */
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+              
+              {/* Left Column */}
+              <div className="xl:col-span-8 space-y-4 min-w-0">
+                <StudentTable
+                  students={filteredStudents}
+                  selectedStudent={selectedStudent}
+                  onSelectStudent={setSelectedStudent}
+                  onExportCSV={handleExportCSV}
+                  selectedStudentIds={selectedStudentIds}
+                  onToggleSelectStudent={handleToggleSelectStudent}
+                  onSelectAllStudents={handleSelectAllStudents}
+                  onClearSelection={handleClearSelection}
+                  onOpenSingleNotify={(student) => handleOpenNotifications(student)}
+                  onOpenBatchNotify={handleBatchNotify}
+                />
+                <ImpactTrendChart
+                  onExportReport={handleExportCSV}
+                  affectedTotal={counts.affected}
+                />
+              </div>
 
-            {/* Right Column: Pipeline + Breakdown + Evidence */}
-            <div className="xl:col-span-4 space-y-4 min-w-0">
-              <PipelineStages
-                currentStage={currentStage}
-                isRunning={isEvaluating}
-                policyTitle={currentPolicyTitle}
-                ruleId={extractedRule?.rule_id}
-                confidence={extractedRule?.confidence}
-                onOpenReviewModal={() => setIsReviewModalOpen(true)}
-              />
-              <ImpactBreakdownCard
-                summary={summary}
-                onOpenNotifications={handleOpenNotifications}
-                onOpenReviewModal={() => setIsReviewModalOpen(true)}
-              />
-              <EvidenceDrawer
-                student={selectedStudent}
-                onOpenNotifications={handleOpenNotifications}
-                onOpenReviewModal={() => setIsReviewModalOpen(true)}
-              />
-            </div>
+              {/* Right Column: Student Details (Immediate action) + Breakdown + Pipeline */}
+              <div className="xl:col-span-4 space-y-4 min-w-0">
+                <EvidenceDrawer
+                  student={selectedStudent}
+                  onOpenNotifications={() => handleOpenNotifications()}
+                  onOpenReviewModal={() => setIsReviewModalOpen(true)}
+                />
+                <ImpactBreakdownCard
+                  summary={summary}
+                  onOpenNotifications={() => handleOpenNotifications()}
+                  onOpenReviewModal={() => setIsReviewModalOpen(true)}
+                  onSelectCohortTab={(tab) => {
+                    setActiveCohortTab(tab);
+                    setActiveNavTab('roster');
+                  }}
+                  onBatchNotifyAffected={() => {
+                    const affected = allStudents.filter((s) => s.status === 'AFFECTED');
+                    handleBatchNotify(affected);
+                  }}
+                />
+                <PipelineStages
+                  currentStage={currentStage}
+                  isRunning={isEvaluating}
+                  policyTitle={currentPolicyTitle}
+                  confidence={extractedRule?.confidence}
+                  onOpenReviewModal={() => setIsReviewModalOpen(true)}
+                />
+              </div>
 
-          </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -395,8 +478,12 @@ export function App() {
 
       <NotificationModal
         isOpen={isNotificationModalOpen}
-        onClose={() => setIsNotificationModalOpen(false)}
+        onClose={() => {
+          setIsNotificationModalOpen(false);
+          setBatchNoticeStudents(undefined);
+        }}
         student={selectedStudent}
+        batchStudents={batchNoticeStudents}
         notificationPreview={notificationPreview}
         isDispatching={isDispatching}
         onDispatch={handleDispatchNotification}
