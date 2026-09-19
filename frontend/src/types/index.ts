@@ -10,13 +10,19 @@ export interface PolicyDetail {
   content: string;
 }
 
+export interface RuleScope {
+  semester?: string | null;
+  department?: string | null;
+  course_id?: string | null;
+}
+
 export interface ExtractedRule {
   rule_id: string;
   field: string;
   operator: string;
   threshold_value: number;
   previous_value?: number | null;
-  scope: string;
+  scope?: string | RuleScope | any;
   source_document: string;
   source_section: string;
   source_page: number;

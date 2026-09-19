@@ -57,7 +57,7 @@ export const AuditDrawer: React.FC<AuditDrawerProps> = ({ isOpen, onClose, entri
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-900">Compliance Activity Ledger</h2>
-              <p className="text-[11px] text-slate-400">Tamper-evident record of all system events</p>
+              
             </div>
           </div>
           <button

@@ -24,7 +24,23 @@ export const HumanReviewModal: React.FC<HumanReviewModalProps> = ({
       setThreshold(rule.threshold_value);
       setOperator(rule.operator || '>=');
       setField(rule.field || 'attendance_percentage');
-      setScope(rule.scope || 'all_students');
+
+      if (rule.scope && typeof rule.scope === 'object') {
+        const s: any = rule.scope;
+        if (s.semester) {
+          setScope(s.semester);
+        } else if (s.department) {
+          setScope(s.department);
+        } else if (s.course_id) {
+          setScope(s.course_id);
+        } else {
+          setScope('all_students');
+        }
+      } else if (typeof rule.scope === 'string') {
+        setScope(rule.scope);
+      } else {
+        setScope('all_students');
+      }
     }
   }, [rule]);
 
@@ -32,32 +48,105 @@ export const HumanReviewModal: React.FC<HumanReviewModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    let scopePayload: any = null;
+    if (scope === 'all_students') {
+      scopePayload = { semester: null, department: null, course_id: null };
+    } else if (/^s\d+$/i.test(scope) || scope.toLowerCase().startsWith('semester_')) {
+      const sem = scope.replace(/semester_/i, '').toUpperCase();
+      scopePayload = { semester: sem, department: null, course_id: null };
+    } else if (scope === 'first_year') {
+      scopePayload = { semester: 'S1', department: null, course_id: null };
+    } else if (scope === 'graduating_seniors') {
+      scopePayload = { semester: 'S8', department: null, course_id: null };
+    } else {
+      scopePayload = { semester: null, department: scope, course_id: null };
+    }
+
     onConfirmRule({
       threshold_value: Number(threshold),
       operator,
       field,
-      scope,
+      scope: scopePayload,
     });
   };
 
-  const getMetricName = (f: any) => {
-    const str = String(f || '');
-    if (str.toLowerCase().includes('attendance')) return 'Attendance Percentage';
-    if (str.toLowerCase().includes('gpa')) return 'Grade Point Average (GPA)';
-    if (str.toLowerCase().includes('credit')) return 'Completed Credits';
-    return str.replace(/_/g, ' ') || 'Attendance';
+  const getOperatorPhrase = (op: string) => {
+    switch (op) {
+      case '>=': return 'at least';
+      case '>': return 'strictly greater than';
+      case '<=': return 'at most';
+      case '<': return 'strictly less than';
+      case '==': return 'exactly equal to';
+      case '!=': return 'different from';
+      default: return 'at least';
+    }
+  };
+
+  const getMetricDetails = (f: any) => {
+    const str = String(f || '').toLowerCase();
+    const docName = String(rule.source_document || rule.name || '').toLowerCase();
+
+    if (str.includes('attendance')) {
+      return {
+        name: 'Attendance Percentage',
+        unit: '%',
+        action: 'qualify to appear for final examinations',
+      };
+    }
+    if (str.includes('gpa')) {
+      const isHonors = docName.includes('honor') || docName.includes('fellowship') || docName.includes('scholarship');
+      return {
+        name: 'Grade Point Average (GPA)',
+        unit: '',
+        action: isHonors ? 'maintain honors & fellowship eligibility' : 'remain in good academic standing',
+      };
+    }
+    if (str.includes('credit')) {
+      return {
+        name: 'Completed Credits',
+        unit: ' credits',
+        action: 'satisfy academic advancement criteria',
+      };
+    }
+    return {
+      name: String(f).replace(/_/g, ' ') || 'Attendance',
+      unit: '',
+      action: 'satisfy compliance requirements',
+    };
   };
 
   const getScopeName = (s: any) => {
-    const str = String(s || '');
-    if (str.toLowerCase().includes('all')) return 'All Enrolled Students';
-    if (str.toLowerCase().includes('fresh')) return 'First-Year Students Only';
-    if (str.toLowerCase().includes('senior')) return 'Final-Year Students Only';
-    return str.replace(/_/g, ' ') || 'All Students';
+    if (!s) return 'All Enrolled Students';
+    if (typeof s === 'object') {
+      const parts: string[] = [];
+      if (s.semester) parts.push(`Semester ${s.semester} Students`);
+      if (s.department) parts.push(`${s.department} Department`);
+      if (s.course_id) parts.push(`Course ${s.course_id}`);
+      return parts.length > 0 ? parts.join(', ') : 'All Enrolled Students';
+    }
+
+    const str = String(s).trim();
+    if (str === '' || str === '[object Object]' || str.toLowerCase() === 'all' || str.toLowerCase() === 'all_students') {
+      return 'All Enrolled Students';
+    }
+    if (str.toLowerCase() === 'first_year' || str.toLowerCase().includes('fresh')) {
+      return 'First-Year Students';
+    }
+    if (str.toLowerCase() === 'graduating_seniors' || str.toLowerCase().includes('senior')) {
+      return 'Graduating Seniors';
+    }
+    if (str.toLowerCase().startsWith('semester_') || /^s\d+$/i.test(str)) {
+      const sem = str.replace(/semester_/i, '').toUpperCase();
+      return `Semester ${sem} Students`;
+    }
+    return str.replace(/_/g, ' ');
   };
 
+  const metricDetails = getMetricDetails(field);
+  const operatorPhrase = getOperatorPhrase(operator);
   const isGPA = String(field || '').toLowerCase().includes('gpa');
-  const unit = isGPA ? '' : '%';
+  const unit = metricDetails.unit;
+  const hasPrevious = rule.previous_value !== undefined && rule.previous_value !== null && rule.previous_value !== threshold;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 modal-backdrop p-4">
@@ -163,8 +252,12 @@ export const HumanReviewModal: React.FC<HumanReviewModalProps> = ({
                 className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#3B4F7A]/20 focus:border-[#3B4F7A] text-xs cursor-pointer"
               >
                 <option value="all_students">All Enrolled Students</option>
+                <option value="S5">Semester 5 (S5) Students</option>
                 <option value="first_year">First-Year Students</option>
                 <option value="graduating_seniors">Graduating Seniors</option>
+                {scope && !['all_students', 'S5', 'first_year', 'graduating_seniors'].includes(scope) && (
+                  <option value={scope}>{getScopeName(scope)}</option>
+                )}
               </select>
             </div>
           </div>
@@ -178,7 +271,14 @@ export const HumanReviewModal: React.FC<HumanReviewModalProps> = ({
               Plain English Summary
             </div>
             <p className="text-xs leading-relaxed text-emerald-950">
-              A student will pass if their <strong>{getMetricName(field)}</strong> is <strong>at least {threshold}{unit}</strong>. This policy applies to <strong>{getScopeName(scope)}</strong>.
+              A student will <strong>{metricDetails.action}</strong> if their <strong>{metricDetails.name}</strong> is{' '}
+              <strong>
+                {operatorPhrase} {threshold}{unit}
+              </strong>
+              {hasPrevious && (
+                <span className="text-emerald-800 font-medium"> (revised from previous standard of {rule.previous_value}{unit})</span>
+              )}
+              . This policy applies to <strong>{getScopeName(scope)}</strong>.
             </p>
           </div>
 

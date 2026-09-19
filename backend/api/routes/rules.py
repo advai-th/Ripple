@@ -133,9 +133,36 @@ async def confirm_rule(req: ConfirmRuleRequest):
     final_prev = req.previous_value if req.previous_value is not None else (existing_rule.previous_value if existing_rule else None)
 
     # Scopes
-    final_semester = req.scope_semester or (existing_rule.scope.semester if existing_rule and existing_rule.scope else None)
-    final_dept = req.scope_department or (existing_rule.scope.department if existing_rule and existing_rule.scope else None)
-    final_course = req.scope_course_id or (existing_rule.scope.course_id if existing_rule and existing_rule.scope else None)
+    final_semester = req.scope_semester
+    final_dept = req.scope_department
+    final_course = req.scope_course_id
+
+    if isinstance(req.scope, dict):
+        final_semester = req.scope.get("semester") if "semester" in req.scope else final_semester
+        final_dept = req.scope.get("department") if "department" in req.scope else final_dept
+        final_course = req.scope.get("course_id") if "course_id" in req.scope else final_course
+    elif isinstance(req.scope, str):
+        s_lower = req.scope.lower().strip()
+        if s_lower in ("all", "all_students"):
+            final_semester = None
+            final_dept = None
+            final_course = None
+        elif s_lower.startswith("semester_") or req.scope.upper().startswith("S"):
+            final_semester = req.scope.replace("semester_", "").replace("SEMESTER_", "").upper()
+        else:
+            final_dept = req.scope
+
+    if (
+        req.scope_semester is None
+        and req.scope_department is None
+        and req.scope_course_id is None
+        and req.scope is None
+        and existing_rule
+        and existing_rule.scope
+    ):
+        final_semester = existing_rule.scope.semester
+        final_dept = existing_rule.scope.department
+        final_course = existing_rule.scope.course_id
 
     # Source
     final_doc = req.document or (existing_rule.source.document if existing_rule and existing_rule.source else "policy.txt")

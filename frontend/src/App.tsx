@@ -24,8 +24,17 @@ import { NotificationModal } from './components/NotificationModal';
 import { AuditDrawer } from './components/AuditDrawer';
 import { ToastContainer } from './components/ToastContainer';
 import { CohortAnalyticsView } from './components/CohortAnalyticsView';
+import { useAuth } from './context/AuthContext';
+import { LoginPage } from './components/auth/LoginPage';
+import { ForgotPasswordModal } from './components/auth/ForgotPasswordModal';
+import { SettingsModal } from './components/SettingsModal';
 
 export function App() {
+  // Authentication State
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+
   // State
   const [samples, setSamples] = useState<PolicySample[]>([]);
   const [selectedSampleKey, setSelectedSampleKey] = useState<string>('');
@@ -329,6 +338,38 @@ export function App() {
     };
   }, [allStudents]);
 
+  // Loading session screen
+  if (isLoading) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#0C101A] text-slate-400 font-sans select-none">
+        <div className="w-12 h-12 rounded-xl bg-[#1A2338] border border-white/10 p-2 flex items-center justify-center mb-4 shadow-xl">
+          <img src="/logo.png" alt="Ripple" className="w-full h-full object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/favicon.svg'; }} />
+        </div>
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+          <svg className="w-4 h-4 animate-spin text-[#8FA5D8]" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Authenticating Session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // If unauthenticated, display full-screen modern LoginPage
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LoginPage onOpenForgotPassword={() => setIsForgotPasswordOpen(true)} />
+        <ForgotPasswordModal
+          isOpen={isForgotPasswordOpen}
+          onClose={() => setIsForgotPasswordOpen(false)}
+        />
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      </>
+    );
+  }
+
   return (
     <div className="h-screen w-screen flex flex-row overflow-hidden bg-[#F0F2F7] text-slate-700 antialiased">
       {/* Sidebar */}
@@ -345,6 +386,7 @@ export function App() {
         }}
         onSelectDashboard={() => setActiveNavTab('roster')}
         onOpenReviewModal={() => setIsReviewModalOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         activePoliciesCount={samples.length || 4}
         affectedCount={counts.affected}
       />
@@ -493,6 +535,11 @@ export function App() {
         isOpen={isAuditDrawerOpen}
         onClose={() => setIsAuditDrawerOpen(false)}
         entries={auditEntries}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
