@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-md text-xs font-medium flex items-center gap-1.5 transition"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            Threshold: {extractedRule.threshold_value}%
+            Threshold: {extractedRule.threshold_value}{extractedRule.field?.toLowerCase().includes('gpa') ? ' GPA' : '%'}
           </button>
         )}
 

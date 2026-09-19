@@ -12,6 +12,7 @@ const eventColors: Record<string, string> = {
   rule_extracted: 'bg-violet-100 text-violet-700',
   rule_confirmed: 'bg-emerald-100 text-emerald-700',
   rule_edited: 'bg-amber-100 text-amber-700',
+  rule_rejected: 'bg-rose-100 text-rose-700',
   evaluation_run: 'bg-[#3B4F7A]/10 text-[#3B4F7A]',
   notification_sent: 'bg-slate-100 text-slate-600',
 };
@@ -135,6 +136,11 @@ export const AuditDrawer: React.FC<AuditDrawerProps> = ({ isOpen, onClose, entri
                         {entry.status}
                       </span>
                     </div>
+                    {entry.details?.summary && (
+                      <div className="text-[11px] font-medium text-slate-800 bg-slate-50 px-2.5 py-1.5 rounded border border-slate-200">
+                        {String(entry.details.summary)}
+                      </div>
+                    )}
                     {entry.details && Object.keys(entry.details).length > 0 && (
                       <div className="text-[10px] font-mono bg-slate-50 p-2 rounded border border-slate-200 text-slate-600 max-h-20 overflow-y-auto space-y-0.5">
                         {Object.entries(entry.details).map(([k, v]) => (

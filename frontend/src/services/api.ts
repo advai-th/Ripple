@@ -51,20 +51,37 @@ export const api = {
     return res.json();
   },
 
-  async confirmRule(ruleId: string, overrides?: Partial<ExtractedRule>): Promise<{ status: string; rule: ExtractedRule; confirmed: boolean }> {
+  async confirmRule(ruleId: string, overrides?: Partial<ExtractedRule> & { confirmed_by?: string }): Promise<{ status: string; rule: ExtractedRule; confirmed: boolean }> {
     const res = await fetch(`${API_BASE}/rules/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         rule_id: ruleId,
         human_confirmed: true,
-        confirmed_by: 'Academic Affairs Admin',
+        confirmed_by: overrides?.confirmed_by || 'Dr. Aris Thorne',
         ...overrides,
       }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Rule confirmation failed');
+    }
+    return res.json();
+  },
+
+  async rejectRule(ruleId: string, reason: string, rejectedBy = 'Dr. Aris Thorne'): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/rules/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rule_id: ruleId,
+        reason,
+        rejected_by: rejectedBy,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Rule rejection failed');
     }
     return res.json();
   },

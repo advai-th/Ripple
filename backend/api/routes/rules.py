@@ -42,6 +42,7 @@ class ConfirmRuleRequest(BaseModel):
 class RejectRuleRequest(BaseModel):
     rule_id: str
     reason: Optional[str] = "Rejected by administrator"
+    rejected_by: Optional[str] = None
 
 
 @router.post("/extract")
@@ -86,13 +87,15 @@ async def extract_rule(req: ExtractRuleRequest):
         event_type="rule_extracted",
         entity_id=rule.rule_id,
         details={
+            "summary": f"Ripple extracted rule {rule.rule_id}",
             "rule_name": rule.name,
             "field": rule.field,
             "operator": rule.operator,
             "value": rule.value,
             "previous_value": rule.previous_value,
             "confidence": rule.confidence
-        }
+        },
+        actor="Ripple"
     )
 
     rule_dict = rule.model_dump()
@@ -206,15 +209,28 @@ async def confirm_rule(req: ConfirmRuleRequest):
 
     rule_repository.save_rule(confirmed_rule)
 
-    event_type = "rule_edited" if human_edits else "rule_confirmed"
+    actor = req.confirmed_by or "Dr. Aris Thorne"
+    if human_edits:
+        audit_repository.record_event(
+            event_type="rule_edited",
+            entity_id=req.rule_id,
+            details={
+                "summary": f"{actor} edited rule {req.rule_id}",
+                "human_edits": human_edits
+            },
+            actor=actor
+        )
+
     audit_repository.record_event(
-        event_type=event_type,
+        event_type="rule_confirmed",
         entity_id=req.rule_id,
         details={
+            "summary": f"{actor} confirmed rule {req.rule_id}",
             "confirmed_threshold": final_val,
             "operator": final_operator,
             "human_edits": human_edits
-        }
+        },
+        actor=actor
     )
 
     rule_dict = confirmed_rule.model_dump()
@@ -247,10 +263,15 @@ async def reject_rule(req: RejectRuleRequest):
     existing.status = "REJECTED"
     rule_repository.save_rule(existing)
 
+    actor = req.rejected_by or "Dr. Aris Thorne"
     audit_repository.record_event(
         event_type="rule_rejected",
         entity_id=req.rule_id,
-        details={"reason": req.reason}
+        details={
+            "summary": f"{actor} rejected rule {req.rule_id}",
+            "reason": req.reason or "Rejected by administrator"
+        },
+        actor=actor
     )
 
     return {"success": True, "message": "Rule rejected."}

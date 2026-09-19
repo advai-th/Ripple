@@ -13,6 +13,7 @@ interface SubNavTabsProps {
   };
   onOpenReviewModal: () => void;
   threshold?: number;
+  field?: string;
 }
 
 export const SubNavTabs: React.FC<SubNavTabsProps> = ({
@@ -23,7 +24,9 @@ export const SubNavTabs: React.FC<SubNavTabsProps> = ({
   counts,
   onOpenReviewModal,
   threshold = 75,
+  field,
 }) => {
+  const isGPA = field?.toLowerCase().includes('gpa');
   return (
     <section className="bg-white border-b border-slate-200 px-5 py-1.5 flex flex-wrap items-center justify-between gap-3 select-none shrink-0">
       {/* View Switcher */}
@@ -112,7 +115,7 @@ export const SubNavTabs: React.FC<SubNavTabsProps> = ({
           <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
           </svg>
-          Rule: {threshold}%
+          Rule: {threshold}{isGPA ? ' GPA' : '%'}
         </button>
       </div>
     </section>

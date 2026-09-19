@@ -164,7 +164,7 @@ class RippleAgent:
                     document=doc.filename,
                     section=section or "Section 3.2",
                     page=page,
-                    clause_text=clause_snippet or f"The minimum requirement has been set to {new_val}%."
+                    clause_text=clause_snippet or (f"The minimum requirement has been set to {new_val}." if field == "gpa" else f"The minimum requirement has been set to {new_val}%.")
                 ),
                 confidence=0.96,
                 status="PENDING_REVIEW",

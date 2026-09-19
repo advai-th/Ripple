@@ -19,7 +19,7 @@ import { StudentTable } from './components/StudentTable';
 import { ImpactBreakdownCard } from './components/ImpactBreakdownCard';
 import { EvidenceDrawer } from './components/EvidenceDrawer';
 import { PipelineStages } from './components/PipelineStages';
-import { HumanReviewModal } from './components/HumanReviewModal';
+import { RuleReviewPage } from './components/RuleReviewPage';
 import { NotificationModal } from './components/NotificationModal';
 import { AuditDrawer } from './components/AuditDrawer';
 import { ToastContainer } from './components/ToastContainer';
@@ -34,6 +34,11 @@ export function App() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+
+  // View & Routing State (Dashboard vs Dedicated Rule Review Page)
+  const [currentView, setCurrentView] = useState<'dashboard' | 'rule-review'>('dashboard');
+  const [currentPolicyContent, setCurrentPolicyContent] = useState<string>('');
+  const [currentPolicyFilename, setCurrentPolicyFilename] = useState<string>('');
 
   // State
   const [samples, setSamples] = useState<PolicySample[]>([]);
@@ -56,7 +61,6 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modals & Drawers
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState<boolean>(false);
   const [isAuditDrawerOpen, setIsAuditDrawerOpen] = useState<boolean>(false);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
@@ -80,6 +84,33 @@ export function App() {
   const dismissToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
+
+  // URL Routing Sync
+  const openRuleReviewPage = () => {
+    const policyId = selectedSampleKey || 'policy';
+    const ruleId = extractedRule?.rule_id || 'rule';
+    window.history.pushState({}, '', `/policies/${policyId}/rules/${ruleId}/review`);
+    setCurrentView('rule-review');
+  };
+
+  const returnToDashboard = () => {
+    window.history.pushState({}, '', '/');
+    setCurrentView('dashboard');
+  };
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      if (window.location.pathname.includes('/review')) {
+        setCurrentView('rule-review');
+      } else {
+        setCurrentView('dashboard');
+      }
+    };
+
+    handleLocationChange();
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
 
   // Initial Load
   useEffect(() => {
@@ -107,6 +138,8 @@ export function App() {
 
       const detail = await api.getSampleContent(sampleKey);
       setCurrentPolicyTitle(detail.title);
+      setCurrentPolicyContent(detail.content);
+      setCurrentPolicyFilename(detail.filename);
 
       setCurrentStage(2);
       const extractRes = await api.extractRule(detail.content, detail.filename);
@@ -153,14 +186,16 @@ export function App() {
       setCurrentStage(1);
       const uploadRes = await api.uploadPolicy(file);
       setCurrentPolicyTitle(file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' '));
+      setCurrentPolicyContent(uploadRes.text);
+      setCurrentPolicyFilename(uploadRes.filename || file.name);
 
       setCurrentStage(2);
       const extractRes = await api.extractRule(uploadRes.text, uploadRes.filename);
       setExtractedRule(extractRes.extracted_rule);
 
       setCurrentStage(3);
-      setIsReviewModalOpen(true);
-      showToast('Policy uploaded & parsed. Please verify the extracted rule criteria.', 'info');
+      openRuleReviewPage();
+      showToast('Policy uploaded & parsed. Please verify Ripple\'s interpretation.', 'info');
     } catch (err: any) {
       showToast(`Upload failed: ${err.message}`, 'error');
     } finally {
@@ -168,15 +203,17 @@ export function App() {
     }
   };
 
-  // Confirm Rule from Modal
+  // Confirm Rule from Full-Screen Review Page
   const handleConfirmRule = async (overrides: Partial<ExtractedRule>) => {
     if (!extractedRule) return;
     try {
       setIsEvaluating(true);
-      setIsReviewModalOpen(false);
       setCurrentStage(4);
 
-      const confirmRes = await api.confirmRule(extractedRule.rule_id, overrides);
+      const confirmRes = await api.confirmRule(extractedRule.rule_id, {
+        ...overrides,
+        confirmed_by: user?.displayName || 'Dr. Aris Thorne',
+      });
       setExtractedRule(confirmRes.rule);
 
       setCurrentStage(5);
@@ -195,12 +232,39 @@ export function App() {
       const logs = await api.getAuditLogs(15);
       setAuditEntries(logs);
 
+      returnToDashboard();
+
       showToast(
         `Rule confirmed: ${analysis.summary.affected_count} students non-compliant.`,
         'success'
       );
     } catch (err: any) {
       showToast(`Confirmation error: ${err.message}`, 'error');
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  // Reject Rule Handler
+  const handleRejectRule = async (reason: string) => {
+    if (!extractedRule) return;
+    try {
+      setIsEvaluating(true);
+      await api.rejectRule(extractedRule.rule_id, reason);
+
+      const updatedRule: ExtractedRule = {
+        ...extractedRule,
+        human_confirmed: false,
+      };
+      setExtractedRule(updatedRule);
+
+      const logs = await api.getAuditLogs(15);
+      setAuditEntries(logs);
+
+      returnToDashboard();
+      showToast(`Rule rejected: "${reason}". Policy flagged for manual review.`, 'info');
+    } catch (err: any) {
+      showToast(`Rejection failed: ${err.message}`, 'error');
     } finally {
       setIsEvaluating(false);
     }
@@ -384,140 +448,152 @@ export function App() {
           const affected = allStudents.filter((s) => s.status === 'AFFECTED');
           handleBatchNotify(affected);
         }}
-        onSelectDashboard={() => setActiveNavTab('roster')}
-        onOpenReviewModal={() => setIsReviewModalOpen(true)}
+        onSelectDashboard={() => {
+          returnToDashboard();
+          setActiveNavTab('roster');
+        }}
+        onOpenReviewModal={openRuleReviewPage}
         onOpenSettings={() => setIsSettingsOpen(true)}
         activePoliciesCount={samples.length || 4}
         affectedCount={counts.affected}
+        currentView={currentView}
       />
 
-      {/* Main Dashboard */}
-      <main className="flex-1 h-full flex flex-col overflow-hidden min-w-0">
+      {/* Main Content Workspace: Full-Screen Dedicated Rule Review Page vs Dashboard */}
+      {currentView === 'rule-review' ? (
+        <RuleReviewPage
+          rule={extractedRule}
+          policyTitle={currentPolicyTitle}
+          policyContent={currentPolicyContent}
+          policyFilename={currentPolicyFilename}
+          onConfirmRule={handleConfirmRule}
+          onRejectRule={handleRejectRule}
+          onBackToDashboard={returnToDashboard}
+          isConfirming={isEvaluating}
+          reviewerName={user?.displayName || 'Dr. Aris Thorne'}
+        />
+      ) : (
+        <main className="flex-1 h-full flex flex-col overflow-hidden min-w-0">
         
-        {/* Top Header */}
-        <Header
-          samples={samples}
-          selectedSampleKey={selectedSampleKey}
-          onSelectSample={loadPolicyScenario}
-          isEvaluating={isEvaluating}
-          onUploadFile={handleUploadFile}
-          onOpenReviewModal={() => setIsReviewModalOpen(true)}
-          onOpenAudit={async () => {
-            const logs = await api.getAuditLogs(20);
-            setAuditEntries(logs);
-            setIsAuditDrawerOpen(true);
-          }}
-          onOpenNotifications={() => handleOpenNotifications()}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          extractedRule={extractedRule}
-          currentPolicyTitle={currentPolicyTitle}
-        />
-
-        {/* Sub-Navigation */}
-        <SubNavTabs
-          activeNavTab={activeNavTab}
-          onSelectNavTab={setActiveNavTab}
-          activeCohortTab={activeCohortTab}
-          onSelectCohortTab={setActiveCohortTab}
-          counts={counts}
-          onOpenReviewModal={() => setIsReviewModalOpen(true)}
-          threshold={extractedRule?.threshold_value || 75}
-        />
-
-        {/* Dashboard Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          
-          {/* Metrics Row */}
-          <MetricsCards
-            summary={summary}
-            onOpenReviewModal={() => setIsReviewModalOpen(true)}
-            activePoliciesCount={samples.length || 4}
-            onSelectCohortTab={(tab) => {
-              setActiveCohortTab(tab);
-              setActiveNavTab('roster');
+          {/* Top Header */}
+          <Header
+            samples={samples}
+            selectedSampleKey={selectedSampleKey}
+            onSelectSample={loadPolicyScenario}
+            isEvaluating={isEvaluating}
+            onUploadFile={handleUploadFile}
+            onOpenReviewModal={openRuleReviewPage}
+            onOpenAudit={async () => {
+              const logs = await api.getAuditLogs(20);
+              setAuditEntries(logs);
+              setIsAuditDrawerOpen(true);
             }}
-            activeCohortTab={activeCohortTab}
+            onOpenNotifications={() => handleOpenNotifications()}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            extractedRule={extractedRule}
+            currentPolicyTitle={currentPolicyTitle}
           />
 
-          {/* Conditional View: Cohort Analytics Tab vs Student Roster Tab */}
-          {activeNavTab === 'analytics' ? (
-            <CohortAnalyticsView
-              allStudents={allStudents}
+          {/* Sub-Navigation */}
+          <SubNavTabs
+            activeNavTab={activeNavTab}
+            onSelectNavTab={setActiveNavTab}
+            activeCohortTab={activeCohortTab}
+            onSelectCohortTab={setActiveCohortTab}
+            counts={counts}
+            onOpenReviewModal={openRuleReviewPage}
+            threshold={extractedRule?.threshold_value || 75}
+            field={extractedRule?.field}
+          />
+
+          {/* Dashboard Body */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            
+            {/* Metrics Row */}
+            <MetricsCards
               summary={summary}
-              onExportCSV={handleExportCSV}
+              onOpenReviewModal={openRuleReviewPage}
+              activePoliciesCount={samples.length || 4}
               onSelectCohortTab={(tab) => {
                 setActiveCohortTab(tab);
                 setActiveNavTab('roster');
               }}
-              onOpenReviewModal={() => setIsReviewModalOpen(true)}
+              activeCohortTab={activeCohortTab}
             />
-          ) : (
-            /* Main Grid: Left (8 cols) + Right (4 cols) */
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-              
-              {/* Left Column */}
-              <div className="xl:col-span-8 space-y-4 min-w-0">
-                <StudentTable
-                  students={filteredStudents}
-                  selectedStudent={selectedStudent}
-                  onSelectStudent={setSelectedStudent}
-                  onExportCSV={handleExportCSV}
-                  selectedStudentIds={selectedStudentIds}
-                  onToggleSelectStudent={handleToggleSelectStudent}
-                  onSelectAllStudents={handleSelectAllStudents}
-                  onClearSelection={handleClearSelection}
-                  onOpenSingleNotify={(student) => handleOpenNotifications(student)}
-                  onOpenBatchNotify={handleBatchNotify}
-                />
-                <ImpactTrendChart
-                  onExportReport={handleExportCSV}
-                  affectedTotal={counts.affected}
-                />
-              </div>
 
-              {/* Right Column: Student Details (Immediate action) + Breakdown + Pipeline */}
-              <div className="xl:col-span-4 space-y-4 min-w-0">
-                <EvidenceDrawer
-                  student={selectedStudent}
-                  onOpenNotifications={() => handleOpenNotifications()}
-                  onOpenReviewModal={() => setIsReviewModalOpen(true)}
-                />
-                <ImpactBreakdownCard
-                  summary={summary}
-                  onOpenNotifications={() => handleOpenNotifications()}
-                  onOpenReviewModal={() => setIsReviewModalOpen(true)}
-                  onSelectCohortTab={(tab) => {
-                    setActiveCohortTab(tab);
-                    setActiveNavTab('roster');
-                  }}
-                  onBatchNotifyAffected={() => {
-                    const affected = allStudents.filter((s) => s.status === 'AFFECTED');
-                    handleBatchNotify(affected);
-                  }}
-                />
-                <PipelineStages
-                  currentStage={currentStage}
-                  isRunning={isEvaluating}
-                  policyTitle={currentPolicyTitle}
-                  confidence={extractedRule?.confidence}
-                  onOpenReviewModal={() => setIsReviewModalOpen(true)}
-                />
-              </div>
+            {/* Conditional View: Cohort Analytics Tab vs Student Roster Tab */}
+            {activeNavTab === 'analytics' ? (
+              <CohortAnalyticsView
+                allStudents={allStudents}
+                summary={summary}
+                onExportCSV={handleExportCSV}
+                onSelectCohortTab={(tab) => {
+                  setActiveCohortTab(tab);
+                  setActiveNavTab('roster');
+                }}
+                onOpenReviewModal={openRuleReviewPage}
+              />
+            ) : (
+              /* Split Layout: Student Roster (8 cols) + Evidence & Actions (4 cols) */
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+                
+                {/* Left Column */}
+                <div className="xl:col-span-8 space-y-4 min-w-0">
+                  <StudentTable
+                    students={filteredStudents}
+                    selectedStudent={selectedStudent}
+                    onSelectStudent={setSelectedStudent}
+                    onExportCSV={handleExportCSV}
+                    selectedStudentIds={selectedStudentIds}
+                    onToggleSelectStudent={handleToggleSelectStudent}
+                    onSelectAllStudents={handleSelectAllStudents}
+                    onClearSelection={handleClearSelection}
+                    onOpenSingleNotify={(student) => handleOpenNotifications(student)}
+                    onOpenBatchNotify={handleBatchNotify}
+                  />
+                  <ImpactTrendChart
+                    onExportReport={handleExportCSV}
+                    affectedTotal={counts.affected}
+                  />
+                </div>
 
-            </div>
-          )}
-        </div>
-      </main>
+                {/* Right Column: Student Details (Immediate action) + Breakdown + Pipeline */}
+                <div className="xl:col-span-4 space-y-4 min-w-0">
+                  <EvidenceDrawer
+                    student={selectedStudent}
+                    onOpenNotifications={() => handleOpenNotifications()}
+                    onOpenReviewModal={openRuleReviewPage}
+                  />
+                  <ImpactBreakdownCard
+                    summary={summary}
+                    onOpenNotifications={() => handleOpenNotifications()}
+                    onOpenReviewModal={openRuleReviewPage}
+                    onSelectCohortTab={(tab) => {
+                      setActiveCohortTab(tab);
+                      setActiveNavTab('roster');
+                    }}
+                    onBatchNotifyAffected={() => {
+                      const affected = allStudents.filter((s) => s.status === 'AFFECTED');
+                      handleBatchNotify(affected);
+                    }}
+                  />
+                  <PipelineStages
+                    currentStage={currentStage}
+                    isRunning={isEvaluating}
+                    policyTitle={currentPolicyTitle}
+                    confidence={extractedRule?.confidence}
+                    onOpenReviewModal={openRuleReviewPage}
+                  />
+                </div>
+
+              </div>
+            )}
+          </div>
+        </main>
+      )}
 
       {/* Modals & Drawers */}
-      <HumanReviewModal
-        isOpen={isReviewModalOpen}
-        onClose={() => setIsReviewModalOpen(false)}
-        rule={extractedRule}
-        onConfirmRule={handleConfirmRule}
-      />
-
       <NotificationModal
         isOpen={isNotificationModalOpen}
         onClose={() => {
