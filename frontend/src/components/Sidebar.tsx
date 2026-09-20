@@ -17,7 +17,6 @@ interface SidebarProps {
   onSelectDashboard?: () => void;
   onOpenAdvisoryNotices?: () => void;
   onOpenSettings?: () => void;
-  onOpenAwsStatus?: () => void;
   activePoliciesCount?: number;
   affectedCount?: number;
   currentView?: 'dashboard' | 'rule-review';
@@ -32,7 +31,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectDashboard,
   onOpenAdvisoryNotices,
   onOpenSettings,
-  onOpenAwsStatus,
   activePoliciesCount = 4,
   affectedCount = 34,
   currentView = 'dashboard',

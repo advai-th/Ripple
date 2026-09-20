@@ -456,7 +456,6 @@ export function App() {
         }}
         onOpenReviewModal={openRuleReviewPage}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenAwsStatus={() => setIsAwsStatusOpen(true)}
         activePoliciesCount={samples.length || 4}
         affectedCount={counts.affected}
         currentView={currentView}
@@ -497,7 +496,6 @@ export function App() {
             onSearchChange={setSearchQuery}
             extractedRule={extractedRule}
             currentPolicyTitle={currentPolicyTitle}
-            onOpenAwsStatus={() => setIsAwsStatusOpen(true)}
           />
 
 

@@ -14,7 +14,6 @@ interface HeaderProps {
   onSearchChange: (q: string) => void;
   extractedRule: ExtractedRule | null;
   currentPolicyTitle?: string;
-  onOpenAwsStatus?: () => void;
 }
 
 
@@ -29,7 +28,6 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   extractedRule,
   currentPolicyTitle,
-  onOpenAwsStatus,
 }) => {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
