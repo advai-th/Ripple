@@ -67,17 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right: Controls */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* AWS Cloud Status Chip */}
-        {onOpenAwsStatus && (
-          <button
-            onClick={onOpenAwsStatus}
-            className="px-2.5 py-1.5 rounded-md bg-gradient-to-r from-slate-50 to-amber-50/50 hover:from-slate-100 hover:to-amber-100/60 border border-amber-200/80 text-xs font-semibold text-slate-700 flex items-center gap-1.5 transition shadow-2xs"
-            title="AWS Cloud Engine & Infrastructure Diagnostics"
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-            <span>AWS Cloud</span>
-          </button>
-        )}
+
 
         {/* Scenario Selector */}
         <div className="relative">

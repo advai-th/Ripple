@@ -8,7 +8,9 @@ from backend.services.aws_config import aws_config
 
 logger = logging.getLogger("ripple.s3")
 
-LOCAL_STORAGE_DIR = Path("backend/data/circulars")
+# On AWS Lambda, /var/task is read-only — use /tmp for local fallback storage
+_is_lambda = bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+LOCAL_STORAGE_DIR = Path("/tmp/circulars") if _is_lambda else Path("backend/data/circulars")
 LOCAL_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -105,16 +107,17 @@ class S3Service:
         except Exception as e:
             logger.warning(f"S3 upload failed: {e}. Storing locally.")
 
-        # Always maintain local copy for instant zero-latency parser access
+        # Only write locally if S3 failed (Lambda /tmp fallback) or running locally
         local_path = LOCAL_STORAGE_DIR / filename
-        with open(local_path, "wb") as f:
-            f.write(content)
+        if not s3_success:
+            with open(local_path, "wb") as f:
+                f.write(content)
 
         return {
             "filename": filename,
             "s3_key": s3_key if s3_success else None,
             "s3_bucket": self.bucket_name if s3_success else None,
-            "local_path": str(local_path),
+            "local_path": str(local_path) if not s3_success else None,
             "storage_mode": "Amazon S3 (Encrypted)" if s3_success else "Local Storage (Fallback)",
             "size_bytes": len(content)
         }

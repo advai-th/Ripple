@@ -7,7 +7,12 @@ import type {
   NotificationPreview
 } from '../types';
 
-const API_BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/+$/, '');
+// Normalise the base URL:
+// - Local dev (no env var): falls back to '/api' which Vite proxies to localhost:8000
+// - AWS (env var set): uses the full URL; appends '/api' if not already present
+const _base = (import.meta.env.VITE_API_BASE || '').replace(/\/+$/, '');
+const API_BASE = _base ? (_base.endsWith('/api') ? _base : `${_base}/api`) : '/api';
+
 
 
 export const api = {

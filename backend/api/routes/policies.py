@@ -83,6 +83,7 @@ async def upload_policy(
         "page_count": parsed.page_count,
         "content_snippet": parsed.content[:400],
         "full_content": parsed.content,
+        "text": parsed.content,        # frontend reads uploadRes.text for rule extraction
         "storage": storage_info
     }
 

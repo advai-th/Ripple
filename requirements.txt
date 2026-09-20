@@ -4,8 +4,8 @@ pydantic>=2.6.0
 python-dotenv>=1.0.0
 python-multipart>=0.0.9
 pdfplumber>=0.10.0
-boto3>=1.34.0
+# boto3 excluded — Lambda Python 3.13 runtime includes it natively
+# PyMuPDF removed — unused, only pdfplumber is imported in document_parser.py
 mangum>=0.17.0
 httpx>=0.27.0
-PyMuPDF>=1.24.0
 aiofiles>=24.0.0

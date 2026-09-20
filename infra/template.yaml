@@ -202,6 +202,19 @@ Resources:
                 - bedrock:ListFoundationModels
                 - bedrock:GetFoundationModel
               Resource: "*"
+            - Sid: DynamoDBListPolicy
+              Effect: Allow
+              Action:
+                - dynamodb:ListTables
+              Resource: "*"
+            - Sid: S3ListPolicy
+              Effect: Allow
+              Action:
+                - s3:ListAllMyBuckets
+                - s3:GetBucketLocation
+                - s3:HeadBucket
+              Resource: "*"
+
       Events:
         ApiRoot:
           Type: HttpApi
