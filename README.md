@@ -8,9 +8,9 @@
 <p align="center">
   <a href="#-quick-start">Quick Start</a> •
   <a href="#-the-problem--solution">Why Ripple?</a> •
-  <a href="#-architecture--principles">Architecture</a> •
-  <a href="#-live-demo-flow">30-Second Demo</a> •
-  <a href="#-features">Features</a> •
+  <a href="#-architecture">Architecture</a> •
+  <a href="#-30-second-live-demo-walkthrough">30-Second Demo</a> •
+  <a href="#-features-at-a-glance">Features</a> •
   <a href="#-api-reference">API Docs</a>
 </p>
 
@@ -19,6 +19,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Python 3.11+](https://img.shields.io/badge/Python_3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
+[![AWS SAM](https://img.shields.io/badge/AWS_SAM-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)](https://aws.amazon.com/serverless/sam/)
+[![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock_(Nova_Pro)-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)](https://aws.amazon.com/bedrock/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -44,7 +46,7 @@ Universities and enterprise organizations regularly revise operational policies 
 ```
                        THE RIPPLE PIPELINE
                        
-   📄 Upload Policy PDF ──► 🤖 AI Rule Extraction (Metric, Operator, Scope, Section)
+   📄 Upload Policy PDF ──► 🤖 AI Rule Extraction (Bedrock Nova Pro)
                                          │
                                          ▼
    📊 Instant Cohort Impact ◄── ⚖️ Deterministic Code Validation (No Hallucination)
@@ -60,19 +62,22 @@ Universities and enterprise organizations regularly revise operational policies 
 
 - 📄 **Automated Regulatory Ingestion**: Ingests circulars (PDF/TXT), identifying threshold changes (e.g. `75%` to `80%`), scope (`S5` semester, engineering), and exact section citations (`§3.2, Page 4`).
 - 🛡️ **Human-in-the-Loop Override**: Administrators review, adjust thresholds, change operators, or confirm rules before scanning records.
-- 📐 **Deterministic Boolean Proofs**: Evaluates cohort records using exact math ($actual \ge required$). Generates transparent proofs: `77.0% >= 80.0% -> FALSE (Deficit: -3.0%)`.
+- 📐 **Deterministic Boolean Proofs**: Evaluates cohort records using exact math. Generates transparent proofs: `77.0% >= 80.0% -> FALSE (Deficit: -3.0%)`.
 - 📬 **Batch Advisory Dispatch**: One-click multi-student notification simulation generating formal **Email letters**, **SMS alerts**, and **Advisor case tasks**.
 - 📈 **Cohort Analytics**: Built-in attendance distribution histogram (`<70%` to `≥85%`), student recovery projections, and cross-department compliance matrix.
 - 🗄️ **Immutable Audit History**: Chronological log of rule extractions, human confirmations, and dispatch runs with instant **Export Ledger (JSON)** and **Download CSV**.
 - 🎨 **Enterprise Dark Navy Design**: Polished, professional UI built with **Plus Jakarta Sans** and **JetBrains Mono**, designed for non-technical academic administrators.
+- ☁️ **Serverless-First on AWS**: Zero server management — auto-scaling Lambda, pay-per-use DynamoDB, and global Amplify CDN.
 
 ---
 
 ## 🚀 Quick Start
 
+### Option A — Local Development
+
 Get Ripple running locally in 3 minutes:
 
-### 1. Clone & Setup Backend
+#### 1. Clone & Setup Backend
 
 ```bash
 git clone https://github.com/your-org/ripple.git
@@ -80,7 +85,8 @@ cd ripple
 
 # Setup virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS/Linux
 
 # Install dependencies
 pip install -r requirements.txt
@@ -88,9 +94,9 @@ pip install -r requirements.txt
 # Start FastAPI server
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-> API will run at `http://127.0.0.1:8000` (Interactive Swagger Docs: `http://127.0.0.1:8000/docs`)
+> API runs at `http://127.0.0.1:8000` — Swagger docs at `http://127.0.0.1:8000/docs`
 
-### 2. Setup Frontend
+#### 2. Setup Frontend
 
 In a new terminal:
 
@@ -99,63 +105,114 @@ cd frontend
 npm install
 npm run dev
 ```
-> Dashboard will launch at `http://localhost:3000`
+> Dashboard launches at `http://localhost:5173`
+
+---
+
+### Option B — AWS Production Deployment
+
+See [DEPLOYMENT_AWS.md](./DEPLOYMENT_AWS.md) for the full step-by-step guide. Quick summary:
+
+```powershell
+# 1. Deploy serverless backend (Lambda + API Gateway + DynamoDB + S3 + Bedrock)
+sam build -t infra/template.yaml
+sam deploy --guided
+
+# 2. Seed DynamoDB with 100 student records + policy circulars
+python scripts/seed_aws.py
+
+# 3. Deploy frontend via AWS Amplify Console
+#    Connect GitHub → tick "My app is a monorepo" → root directory: "frontend"
+#    Add env var in Amplify: VITE_API_BASE = <your API Gateway URL>
+```
 
 ---
 
 ## 🎯 30-Second Live Demo Walkthrough
 
-Try the core evaluation scenario:
-
-1. **Open Dashboard**: Go to `http://localhost:3000` (Pre-authenticated as **Dr. Aris Thorne — Registrar**).
-2. **Select Scenario**: From the top header dropdown, select **"Academic Regulation 2026"**.
-3. **Review AI Extraction**: Click **"Rule: 80%"** to inspect the extracted clause ($75\% \to 80\%$ attendance requirement from Section §3.2, Page 4).
-4. **Confirm Rule**: Click **"Confirm & Scan Students"**.
-5. **Inspect Cohort Impact**: The KPI cards instantly update:
-   - **Needs Attention**: `34 students` (Deficit below 80%)
-   - **Borderline**: `20 students` (Meeting 80%, but within 5% risk buffer)
+1. **Open Dashboard** — Pre-authenticated as **Dr. Aris Thorne — Registrar**.
+2. **Select Scenario** — Choose **"Academic Regulation 2026"** from the header dropdown.
+3. **Review AI Extraction** — Click **"Rule: 80%"** to inspect the extracted clause (75% → 80% from §3.2, Page 4).
+4. **Confirm Rule** — Click **"Confirm & Scan Students"**.
+5. **Inspect Cohort Impact** — KPI cards instantly update:
+   - **Needs Attention**: `34 students` (below 80%)
+   - **Borderline**: `20 students` (within 5% risk buffer)
    - **Passing Rate**: `58%`
-6. **Inspect Student Proof**: Click **Elena Rostova** (`S002`) to view the Evidence Drawer:
-   - Current: `70.0%` vs. Required: `80.0%`
-   - Deficit: `10.0% below requirement`
-   - Recovery math: *Must attend at least 3 remaining sessions*.
-7. **Batch Advisory**: Check 3 students in the table, click **"Send Notices (3)"**, preview the personalized multi-channel notice, and click **"Dispatch Notices"**.
-8. **View Analytics**: Switch to the **"Cohort Analytics"** sub-navigation tab to see the attendance distribution histogram and department compliance breakdown.
+6. **Inspect Student Proof** — Click **Elena Rostova** (`S002`) to view the Evidence Drawer:
+   - Current: `70.0%` vs. Required: `80.0%` — Deficit: `10.0%`
+   - Recovery: *Must attend at least 3 remaining sessions.*
+7. **Batch Advisory** — Check 3 students → **"Send Notices (3)"** → **"Dispatch Notices"**.
+8. **View Analytics** — Switch to **"Cohort Analytics"** for the histogram and compliance matrix.
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ Architecture
+
+### Local Development
 
 ```mermaid
 graph TD
     subgraph Client ["Frontend (React 19 + TypeScript + Vite)"]
         UI[Administrative Dashboard]
-        UI --> MC[MetricsCards & Cohort Filters]
-        UI --> ST[StudentTable with Batch Selection]
-        UI --> ED[EvidenceDrawer - Deficit & Math Proof]
-        UI --> CA[CohortAnalyticsView - Histogram & Matrix]
-        UI --> NM[NotificationModal - Email/SMS/Advisor]
-        UI --> HM[HumanReviewModal - Rule Confirmation]
-        UI --> AD[AuditDrawer - Activity History]
     end
 
-    subgraph API ["Backend API (FastAPI)"]
-        RT_POL["/api/policies (Upload & Circulars)"]
-        RT_RUL["/api/rules (Extract & Confirm)"]
-        RT_ANL["/api/analyses (Cohort Impact)"]
-        RT_NOT["/api/notifications (Dispatch Simulation)"]
-        RT_AUD["/api/audit (Event Ledger)"]
+    subgraph LocalAPI ["Backend (FastAPI + uvicorn)"]
+        RT["REST Endpoints /api/*"]
+        ENGINE[Deterministic Evaluation Engine]
+        AGENT[RippleAgent - Local NLP]
+        RT --> ENGINE
+        RT --> AGENT
     end
 
-    subgraph Core ["Engine Core"]
-        AGENT["RippleAgent (Local NLP / Strands + Bedrock)"]
-        ENGINE["EvaluationEngine (Pure Deterministic Math)"]
-        CALC["AttendanceCalculator (Recovery Sessions)"]
-    end
-
-    Client <==> API
-    API <--> Core
+    Client <--> LocalAPI
 ```
+
+### AWS Production Architecture
+
+```mermaid
+graph TD
+    subgraph Users ["Client Browser"]
+        U["Institutional Administrator"]
+    end
+
+    subgraph Edge ["Frontend Hosting Layer"]
+        AMP["AWS Amplify + CloudFront CDN"]
+        S3_UI["S3 Bucket (React SPA Bundle)"]
+        AMP --> S3_UI
+    end
+
+    subgraph APILayer ["Serverless API Layer"]
+        APIGW["Amazon API Gateway (HTTP API)"]
+        LAMBDA["AWS Lambda — FastAPI via Mangum (Python 3.13)"]
+        APIGW --> LAMBDA
+    end
+
+    subgraph Data ["Persistence & Document Layer"]
+        DDB["Amazon DynamoDB (5 Pay-Per-Request Tables)"]
+        S3_DOC["Amazon S3 (Encrypted Policy Circulars)"]
+        LAMBDA --> DDB
+        LAMBDA --> S3_DOC
+    end
+
+    subgraph AI ["AI Reasoning Layer"]
+        BEDROCK["Amazon Bedrock — Nova Pro v1"]
+        LAMBDA --> BEDROCK
+    end
+
+    U --> AMP
+    U --> APIGW
+```
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | React 19 + Vite + TypeScript + Tailwind | Admin dashboard SPA |
+| **Hosting** | AWS Amplify + CloudFront | Global CDN, auto-deploy from GitHub |
+| **API** | Amazon API Gateway (HTTP) | Public HTTPS endpoints |
+| **Compute** | AWS Lambda + Mangum | Serverless FastAPI runtime |
+| **AI Reasoning** | Amazon Bedrock (Nova Pro) | Rule extraction from PDF circulars |
+| **Database** | Amazon DynamoDB (5 tables) | Students, policies, rules, audit, analyses |
+| **Document Store** | Amazon S3 | Encrypted policy circular storage |
+| **IaC** | AWS SAM (`infra/template.yaml`) | One-command infrastructure deployment |
 
 ---
 
@@ -163,6 +220,7 @@ graph TD
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
+| `GET` | `/api/health` | Health check & AWS connectivity status |
 | `GET` | `/api/policies/samples` | List pre-loaded institutional circulars |
 | `POST` | `/api/policies/upload` | Upload and parse new policy PDF / document |
 | `POST` | `/api/rules/extract` | AI extraction of rule predicate and source citations |
@@ -170,34 +228,46 @@ graph TD
 | `POST` | `/api/analyses/run` | Run deterministic evaluation across student records |
 | `POST` | `/api/notifications/simulate` | Generate personalized email, SMS, and counselor tasks |
 | `GET` | `/api/audit/logs` | Fetch immutable audit logs and exportable compliance records |
+| `GET` | `/api/aws/status` | AWS service connectivity diagnostics |
+| `POST` | `/api/aws/test-bedrock` | Verify Amazon Bedrock inference is reachable |
+
+> Interactive Swagger docs available at `/docs` when running locally.
 
 ---
 
 ## 🗂️ Project Structure
 
 ```text
-├── backend/
+ripple/
+├── backend/                         # Python FastAPI application
 │   ├── agents/
-│   │   └── ripple_agent.py          # Strands reasoning agent (Bedrock-ready + Local NLP)
+│   │   └── ripple_agent.py          # Strands reasoning agent (Bedrock Nova Pro)
 │   ├── api/routes/                  # FastAPI REST endpoints
-│   ├── data/                        # Sample circulars & student cohort datasets
+│   ├── data/                        # Sample circulars & 100-student cohort dataset
 │   ├── models/                      # Pydantic schemas (Rule, Impact, Student)
-│   ├── repositories/                # Persistence & audit trail storage
+│   ├── repositories/                # DynamoDB persistence & audit trail
 │   ├── services/
 │   │   ├── evaluation_engine.py     # Pure deterministic validation engine
-│   │   ├── attendance_calculator.py # Future recovery session math
+│   │   ├── attendance_calculator.py # Recovery session math
 │   │   └── document_parser.py       # PDF/text ingestion
-│   └── main.py                      # Server entrypoint
-├── frontend/
+│   ├── lambda_handler.py            # Mangum adapter — AWS Lambda entrypoint
+│   └── main.py                      # FastAPI app entrypoint
+├── frontend/                        # React 19 + Vite + TypeScript SPA
 │   ├── src/
 │   │   ├── components/              # Roster, Evidence, Analytics, Drawers
 │   │   ├── services/api.ts          # Strongly-typed API client
 │   │   ├── types/                   # TypeScript interfaces
 │   │   ├── App.tsx                  # Main application orchestrator
 │   │   └── index.css                # Plus Jakarta Sans & design tokens
-│   └── tailwind.config.js
-├── ripple-prd.md                    # Full Product Requirements Document
-└── requirements.txt                 # Python dependencies
+│   ├── tailwind.config.js
+│   └── vite.config.ts
+├── infra/
+│   └── template.yaml                # AWS SAM CloudFormation template
+├── scripts/
+│   └── seed_aws.py                  # DynamoDB & S3 data seeder
+├── samconfig.toml                   # SAM deploy config (region: ap-south-1)
+├── requirements.txt                 # Python dependencies
+└── DEPLOYMENT_AWS.md                # Full AWS production deployment guide
 ```
 
 ---
@@ -205,9 +275,26 @@ graph TD
 ## 🔒 Privacy & Compliance (FERPA)
 
 Ripple is designed from the ground up for privacy and educational compliance:
+
 - **Offline-First**: Can run 100% locally with zero external API dependencies.
-- **Data Isolation**: Student records, grades, and personal identifiers never leave the institution.
+- **Data Isolation**: Student records, grades, and personal identifiers never leave the institution's AWS account.
 - **Human Accountability**: All automated evaluations require human administrator sign-off before notices are generated.
+- **Serverless Isolation**: Each Lambda invocation is ephemeral — no persistent compute retaining student data in memory.
+
+---
+
+## 💰 AWS Cost Estimate
+
+All resources use pay-per-use pricing — **zero fixed cost when idle**:
+
+| Service | Pricing Model | Est. Demo Cost |
+| :--- | :--- | :--- |
+| AWS Lambda | Per invocation + duration | ~$0.00 (free tier) |
+| Amazon API Gateway | Per million requests | ~$0.00 (free tier) |
+| Amazon DynamoDB | Pay-per-request | ~$0.00 (free tier) |
+| Amazon S3 | Per GB stored | ~$0.01 |
+| Amazon Bedrock (Nova Pro) | Per input/output token | ~$0.003 per circular |
+| AWS Amplify Hosting | Per build minute + GB served | ~$0.01 |
 
 ---
 
