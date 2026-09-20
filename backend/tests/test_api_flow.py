@@ -19,7 +19,7 @@ def test_full_pipeline_flow():
     policy_id = upload_data["policy_id"]
     assert policy_id.startswith("pol_")
 
-    # 2. Extract rule via Strands Agent
+    # 2. Extract rule via Bedrock or local fallback
     extract_res = client.post("/api/rules/extract", json={"policy_id": policy_id})
     assert extract_res.status_code == 200
     extract_data = extract_res.json()

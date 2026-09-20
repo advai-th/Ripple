@@ -1,0 +1,234 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Ripple Institutional Policy Impact Engine - Cloud Infrastructure.
+  Serverless stack with Amazon Bedrock reasoning, DynamoDB repositories,
+  S3 encrypted document store, and API Gateway HTTP API.
+
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@2
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment target stage
+
+  BedrockModelId:
+    Type: String
+    Default: amazon.nova-pro-v1:0
+    Description: Amazon Bedrock Foundation Model ID for policy rule reasoning
+
+  TablePrefix:
+    Type: String
+    Default: ripple-
+    Description: DynamoDB table prefix for Ripple resources
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    Runtime: python3.13
+    Tracing: Active
+
+Resources:
+  # ============================================================================
+  # 1. Amazon S3 - Encrypted Policy Circulars Storage
+  # ============================================================================
+  RipplePolicyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${TablePrefix}policy-circulars-${AWS::AccountId}-${AWS::Region}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  # ============================================================================
+  # 2. Amazon DynamoDB Tables - Structured Repositories
+  # ============================================================================
+  RippleStudentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${TablePrefix}students"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: student_id
+          AttributeType: S
+        - AttributeName: course_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: student_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CourseIndex
+          KeySchema:
+            - AttributeName: course_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+
+  RipplePoliciesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${TablePrefix}policies"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: sample_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: sample_key
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+
+  RippleRulesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${TablePrefix}rules"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: rule_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: rule_id
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+
+  RippleAuditLedgerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${TablePrefix}audit-ledger"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      SSESpecification:
+        SSEEnabled: true
+
+  RippleAnalysesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${TablePrefix}analyses"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: analysis_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: analysis_id
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+
+  # ============================================================================
+  # 3. AWS Lambda & API Gateway - Serverless API
+  # ============================================================================
+  RippleHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Exposes the FastAPI Lambda through a regional HTTP API with browser CORS enabled for the frontend.
+        must:
+          - Keep the stage name aligned with the Environment parameter because deployment docs and frontend configuration use that path.
+          - Preserve CORS support for browser-based frontend calls.
+    Properties:
+      StageName: !Ref Environment
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Requested-With
+        AllowOrigins:
+          - "*"
+
+  RippleApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "ripple-api-engine-${Environment}"
+      CodeUri: ../
+      Handler: backend.lambda_handler.handler
+      Environment:
+        Variables:
+          AWS_BEDROCK_MODEL_ID: !Ref BedrockModelId
+          AWS_DYNAMODB_PREFIX: !Ref TablePrefix
+          AWS_S3_BUCKET: !Ref RipplePolicyBucket
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RippleStudentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RipplePoliciesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RippleRulesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RippleAuditLedgerTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RippleAnalysesTable
+        - S3CrudPolicy:
+            BucketName: !Ref RipplePolicyBucket
+        - Statement:
+            - Sid: BedrockInvokePolicy
+              Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+                - bedrock:ListFoundationModels
+                - bedrock:GetFoundationModel
+              Resource: "*"
+      Events:
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref RippleHttpApi
+            Path: /
+            Method: ANY
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref RippleHttpApi
+            Path: /{proxy+}
+            Method: ANY
+
+Outputs:
+  HttpApiUrl:
+    Description: URL of the HTTP API Gateway for Ripple backend
+    Value: !Sub "https://${RippleHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+
+  PolicyBucketName:
+    Description: S3 bucket name for policy circulars
+    Value: !Ref RipplePolicyBucket
+
+  StudentsTableName:
+    Description: DynamoDB table name for student records
+    Value: !Ref RippleStudentsTable
+
+  AuditLedgerTableName:
+    Description: DynamoDB table name for immutable compliance audit log
+    Value: !Ref RippleAuditLedgerTable

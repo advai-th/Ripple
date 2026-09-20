@@ -89,7 +89,7 @@ export const RuleReviewPage: React.FC<RuleReviewPageProps> = ({
   // Helpers
   const isGPA = String(field || '').toLowerCase().includes('gpa');
   const unit = isGPA ? '' : '%';
-  const displayUnit = isGPA ? ' GPA' : '%';
+
 
   const getMetricName = (f: string) => {
     const str = String(f || '').toLowerCase();
@@ -783,8 +783,12 @@ export const RuleReviewPage: React.FC<RuleReviewPageProps> = ({
 
                 <div className="flex items-center justify-between py-1 border-b border-slate-100">
                   <span className="text-slate-400">Extraction Engine</span>
-                  <span className="text-slate-700 font-medium">Claude 3.5 Sonnet / Bedrock</span>
+                  <span className="inline-flex items-center gap-1.5 text-slate-700 font-medium text-xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                    {(rule as any).ai_engine || 'Strands Agent / Bedrock'}
+                  </span>
                 </div>
+
 
                 <div className="flex items-center justify-between py-1">
                   <span className="text-slate-400">Rule Identifier</span>

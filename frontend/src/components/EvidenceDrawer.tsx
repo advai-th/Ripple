@@ -10,8 +10,8 @@ interface EvidenceDrawerProps {
 export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
   student,
   onOpenNotifications,
-  onOpenReviewModal,
 }) => {
+
   if (!student) {
     return (
       <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm flex flex-col items-center justify-center text-slate-400 text-xs text-center min-h-[260px]">

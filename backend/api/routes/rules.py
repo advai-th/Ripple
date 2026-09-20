@@ -49,7 +49,7 @@ class RejectRuleRequest(BaseModel):
 async def extract_rule(req: ExtractRuleRequest):
     """
     Stage 2: AI ANALYSIS
-    Strands Agent extracts the structured predicate from the policy document.
+    Bedrock or the local fallback extracts the structured predicate from the policy document.
     Accepts either policy_id (from upload) or direct policy_text and filename.
     """
     doc = None

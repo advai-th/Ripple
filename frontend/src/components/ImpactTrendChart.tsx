@@ -167,8 +167,9 @@ export const ImpactTrendChart: React.FC<ImpactTrendChartProps> = ({
 
         {/* X-axis labels */}
         <div className="ml-9 flex gap-1 mt-1">
-          {data.map((d, idx) => (
+          {data.map((d) => (
             <div key={d.name} className="flex-1 text-center">
+
               <span className={`text-[10px] font-medium ${d.active ? 'text-[#3B4F7A] font-bold' : 'text-slate-400'}`}>
                 {d.name}
               </span>

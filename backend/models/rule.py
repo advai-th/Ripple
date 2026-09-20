@@ -44,6 +44,9 @@ class ExtractedRule(BaseModel):
     status: str = "PENDING_REVIEW"  # PENDING_REVIEW, CONFIRMED, REJECTED
     human_confirmed: bool = False
     human_edits: Optional[Dict[str, Any]] = None
+    ai_engine: Optional[str] = "Amazon Bedrock"
+    aws_region: Optional[str] = None
+    model_id: Optional[str] = None
 
     @field_validator("operator")
     @classmethod

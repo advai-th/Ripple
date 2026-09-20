@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { ImpactResult, CohortSummary } from '../types';
+
+
 import { ImpactTrendChart } from './ImpactTrendChart';
 
 interface CohortAnalyticsViewProps {
@@ -17,9 +19,8 @@ export const CohortAnalyticsView: React.FC<CohortAnalyticsViewProps> = ({
   onSelectCohortTab,
   onOpenReviewModal,
 }) => {
-  const [selectedDept, setSelectedDept] = useState<string>('ALL');
-
   const total = allStudents.length || 1;
+
   const affectedStudents = allStudents.filter((s) => s.status === 'AFFECTED');
   const atRiskStudents = allStudents.filter((s) => s.status === 'AT_RISK');
   const compliantStudents = allStudents.filter((s) => s.status === 'UNAFFECTED');

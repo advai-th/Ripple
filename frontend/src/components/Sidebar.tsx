@@ -17,6 +17,7 @@ interface SidebarProps {
   onSelectDashboard?: () => void;
   onOpenAdvisoryNotices?: () => void;
   onOpenSettings?: () => void;
+  onOpenAwsStatus?: () => void;
   activePoliciesCount?: number;
   affectedCount?: number;
   currentView?: 'dashboard' | 'rule-review';
@@ -31,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectDashboard,
   onOpenAdvisoryNotices,
   onOpenSettings,
+  onOpenAwsStatus,
   activePoliciesCount = 4,
   affectedCount = 34,
   currentView = 'dashboard',
@@ -160,10 +162,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   Activity History
                 </button>
               </li>
+              {onOpenAwsStatus && (
+                <li>
+                  <button
+                    onClick={onOpenAwsStatus}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors text-xs font-medium text-left"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" />
+                      </svg>
+                      AWS Cloud Engine
+                    </span>
+                    <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      AWS
+                    </span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         </nav>
       </div>
+
 
       {/* Dynamic Bottom Profile with Popover Menu */}
       <div className="p-3 border-t border-white/5 relative" ref={profileMenuRef}>

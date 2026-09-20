@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.routes import policies, rules, analyses, students, audit, notifications
+from backend.api.routes import policies, rules, analyses, students, audit, notifications, aws_routes
+from backend.services.aws_config import aws_config
 
 app = FastAPI(
     title="Ripple Policy Impact Engine API",
@@ -24,6 +25,7 @@ app.include_router(analyses.router)
 app.include_router(students.router)
 app.include_router(audit.router)
 app.include_router(notifications.router)
+app.include_router(aws_routes.router)
 
 
 @app.get("/")
@@ -33,17 +35,22 @@ async def root():
         "status": "active",
         "version": "1.0.0",
         "docs_url": "/docs",
-        "openapi_url": "/openapi.json"
+        "openapi_url": "/openapi.json",
+        "aws_region": aws_config.region
     }
 
 
 @app.get("/api/health")
 async def health_check():
+    creds = aws_config.get_credentials_status()
+    cloud_active = creds.get("valid", False)
     return {
         "status": "healthy",
         "service": "Ripple Core Engine",
         "version": "1.0.0",
-        "mode": "Build It (Local)"
+        "mode": "AWS Cloud Active" if cloud_active else "Local Emulation Mode (Fallback)",
+        "aws_region": aws_config.region,
+        "aws_session": creds.get("status", "NO_CREDENTIALS")
     }
 
 

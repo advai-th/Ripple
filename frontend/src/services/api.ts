@@ -7,7 +7,8 @@ import type {
   NotificationPreview
 } from '../types';
 
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/+$/, '');
+
 
 export const api = {
   async getSamples(): Promise<PolicySample[]> {
@@ -117,4 +118,35 @@ export const api = {
     }
     return res.json();
   },
+
+  async getAwsStatus(): Promise<import('../types').AwsDiagnostics> {
+    const res = await fetch(`${API_BASE}/aws/status`);
+    if (!res.ok) throw new Error('Failed to fetch AWS status');
+    return res.json();
+  },
+
+  async syncAws(): Promise<any> {
+    const res = await fetch(`${API_BASE}/aws/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'AWS synchronization failed');
+    }
+    return res.json();
+  },
+
+  async testBedrock(): Promise<{ success: boolean; engine: string; latency_ms: number; message?: string; result_preview?: string }> {
+    const res = await fetch(`${API_BASE}/aws/test-bedrock`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Bedrock test failed');
+    }
+    return res.json();
+  },
 };
+

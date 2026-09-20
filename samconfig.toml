@@ -1,0 +1,13 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "ripple-policy-engine-prod"
+resolve_s3 = true
+s3_prefix = "ripple-policy-engine-prod"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"prod\" BedrockModelId=\"amazon.nova-pro-v1:0\" TablePrefix=\"ripple-\""
+image_repositories = []
+
+[default.global.parameters]
+region = "ap-south-1"

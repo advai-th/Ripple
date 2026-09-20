@@ -28,12 +28,14 @@ import { useAuth } from './context/AuthContext';
 import { LoginPage } from './components/auth/LoginPage';
 import { ForgotPasswordModal } from './components/auth/ForgotPasswordModal';
 import { SettingsModal } from './components/SettingsModal';
+import { AwsStatusModal } from './components/AwsStatusModal';
 
 export function App() {
   // Authentication State
   const { user, isAuthenticated, isLoading } = useAuth();
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isAwsStatusOpen, setIsAwsStatusOpen] = useState<boolean>(false);
 
   // View & Routing State (Dashboard vs Dedicated Rule Review Page)
   const [currentView, setCurrentView] = useState<'dashboard' | 'rule-review'>('dashboard');
@@ -212,7 +214,7 @@ export function App() {
 
       const confirmRes = await api.confirmRule(extractedRule.rule_id, {
         ...overrides,
-        confirmed_by: user?.displayName || 'Dr. Aris Thorne',
+        confirmed_by: user?.name || 'Dr. Aris Thorne',
       });
       setExtractedRule(confirmRes.rule);
 
@@ -454,6 +456,7 @@ export function App() {
         }}
         onOpenReviewModal={openRuleReviewPage}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenAwsStatus={() => setIsAwsStatusOpen(true)}
         activePoliciesCount={samples.length || 4}
         affectedCount={counts.affected}
         currentView={currentView}
@@ -470,8 +473,9 @@ export function App() {
           onRejectRule={handleRejectRule}
           onBackToDashboard={returnToDashboard}
           isConfirming={isEvaluating}
-          reviewerName={user?.displayName || 'Dr. Aris Thorne'}
+          reviewerName={user?.name || 'Dr. Aris Thorne'}
         />
+
       ) : (
         <main className="flex-1 h-full flex flex-col overflow-hidden min-w-0">
         
@@ -493,7 +497,9 @@ export function App() {
             onSearchChange={setSearchQuery}
             extractedRule={extractedRule}
             currentPolicyTitle={currentPolicyTitle}
+            onOpenAwsStatus={() => setIsAwsStatusOpen(true)}
           />
+
 
           {/* Sub-Navigation */}
           <SubNavTabs
@@ -618,7 +624,15 @@ export function App() {
         onClose={() => setIsSettingsOpen(false)}
       />
 
+      <AwsStatusModal
+        isOpen={isAwsStatusOpen}
+        onClose={() => setIsAwsStatusOpen(false)}
+        onSuccessToast={(msg) => showToast(msg, 'success')}
+        onErrorToast={(msg) => showToast(msg, 'error')}
+      />
+
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
     </div>
   );
 }

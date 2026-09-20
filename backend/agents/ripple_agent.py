@@ -1,17 +1,16 @@
 import re
-import os
+import json
+import time
+import logging
 from typing import Dict, Any, Optional, Tuple
+from botocore.config import Config
 from pydantic import ValidationError
 
 from backend.models.rule import ExtractedRule, RuleSource, RuleScope
 from backend.models.policy import ParsedDocument
+from backend.services.aws_config import aws_config
 
-try:
-    from strands import Agent
-    from strands.models import BedrockModel
-    STRANDS_AVAILABLE = True
-except ImportError:
-    STRANDS_AVAILABLE = False
+logger = logging.getLogger("ripple.agent")
 
 
 SYSTEM_PROMPT = """
@@ -35,32 +34,107 @@ exclusively for the deterministic code engine.
 
 class RippleAgent:
     """
-    Strands-based Reasoning Agent for Ripple.
+    Reasoning agent for Ripple with Amazon Bedrock Integration.
     Handles:
-    - Policy rule extraction into ExtractedRule
-    - Safe failure on unsupported rule complexity
-    - Action and explanation generation
+    - Policy rule extraction into ExtractedRule using Amazon Bedrock Converse API (Amazon Nova Pro)
+    - Resilient fallback to local deterministic NLP extractor when AWS is offline or credentials expire
+    - Action and explanation generation with zero hallucinated numbers
     """
 
-    def __init__(self, use_bedrock: bool = False):
-        self.use_bedrock = use_bedrock and bool(os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("AWS_PROFILE"))
-        self._agent = None
+    def __init__(self):
+        self._client = None
+        self._init_bedrock_client()
 
-        if STRANDS_AVAILABLE and self.use_bedrock:
-            try:
-                # Bedrock-backed Strands Agent for Ship It track
-                self._agent = Agent(
-                    name="Ripple Reasoning Agent",
-                    system_prompt=SYSTEM_PROMPT,
-                    structured_output_model=ExtractedRule,
-                )
-            except Exception:
-                self._agent = None
+    def _init_bedrock_client(self):
+        """Initializes a Bedrock Runtime client if AWS credentials are active."""
+        try:
+            session = aws_config.get_session(region_name=aws_config.bedrock_region)
+            creds = session.get_credentials()
+            if not creds:
+                self._client = None
+                return
+
+            self._client = session.client(
+                "bedrock-runtime",
+                region_name=aws_config.bedrock_region,
+                config=Config(
+                    retries={"total_max_attempts": 3, "mode": "adaptive"},
+                    connect_timeout=5,
+                    read_timeout=30,
+                ),
+            )
+            logger.info(f"Initialized Bedrock Runtime client with model {aws_config.bedrock_model_id}")
+        except Exception as e:
+            logger.warning(f"Bedrock client initialization deferred to local fallback: {e}")
+            self._client = None
+
+    def is_bedrock_active(self) -> bool:
+        """Returns True if live Bedrock Runtime client is initialized."""
+        return self._client is not None
+
+    def _converse(self, prompt: str, max_tokens: int = 1024) -> str:
+        """Invokes Bedrock Converse and returns the model's text response."""
+        if not self._client:
+            self._init_bedrock_client()
+        if not self._client:
+            raise RuntimeError("Bedrock not connected. AWS session inactive or credentials expired.")
+
+        response = self._client.converse(
+            modelId=aws_config.bedrock_model_id,
+            system=[{"text": SYSTEM_PROMPT}],
+            messages=[
+                {
+                    "role": "user",
+                    "content": [{"text": prompt}],
+                }
+            ],
+            inferenceConfig={
+                "maxTokens": max_tokens,
+                "temperature": 0.0,
+            },
+        )
+        content = response.get("output", {}).get("message", {}).get("content", [])
+        return "".join(part.get("text", "") for part in content).strip()
+
+    def _parse_rule_json(self, response_text: str) -> ExtractedRule:
+        """Parses a JSON object returned by Bedrock into the rule schema."""
+        try:
+            payload = json.loads(response_text)
+        except json.JSONDecodeError:
+            match = re.search(r"\{.*\}", response_text, re.DOTALL)
+            if not match:
+                raise
+            payload = json.loads(match.group(0))
+
+        return ExtractedRule.model_validate(payload)
+
+    def test_bedrock_live(self) -> Dict[str, Any]:
+        """Tests live Bedrock model invocation with a quick reasoning ping."""
+        start_time = time.time()
+        try:
+            prompt = "Analyze this brief policy sentence: 'All students must maintain an attendance rate of at least 80%.' Output the rule."
+            result = self._converse(prompt, max_tokens=512)
+            duration = int((time.time() - start_time) * 1000)
+
+            return {
+                "success": True,
+                "engine": f"Amazon Bedrock ({aws_config.bedrock_model_id})",
+                "region": aws_config.bedrock_region,
+                "latency_ms": duration,
+                "result_preview": str(result)[:150]
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "engine": "Local Fallback",
+                "latency_ms": int((time.time() - start_time) * 1000),
+                "message": f"Bedrock invocation failed: {str(e)[:150]}"
+            }
 
     def extract_rule(self, doc: ParsedDocument) -> Tuple[Optional[ExtractedRule], Optional[str]]:
         """
         Extracts a structured rule from a parsed policy document.
-        Returns (ExtractedRule, None) on success, or (None, error_message) on safe failure.
+        Attempts Amazon Bedrock first; falls back smoothly to local NLP.
         """
         text = doc.content
 
@@ -71,20 +145,40 @@ class RippleAgent:
                 "be deterministically evaluated by the current MVP. Manual review required."
             )
 
-        # 2. If Strands with live Bedrock is active, run through Strands Agent
-        if self._agent:
-            try:
-                response = self._agent(f"Analyze this policy document and extract the primary rule:\n\n{text}")
-                if isinstance(response, ExtractedRule):
-                    return response, None
-            except Exception:
-                # Fall back to high-fidelity local extraction
-                pass
+        # 2. Try Amazon Bedrock Converse API
+        try:
+            prompt = (
+                "Analyze this institutional policy document and extract the primary rule predicate. "
+                "Return only one valid JSON object matching this schema: "
+                "{"
+                '"rule_id": "string", "name": "string", "entity": "student_course", '
+                '"field": "attendance_pct|gpa", "operator": ">=|>|<=|<|==|!=", '
+                '"value": number, "previous_value": number|null, '
+                '"scope": {"semester": string|null, "department": string|null, "course_id": string|null}, '
+                '"source": {"document": "string", "section": string|null, "page": number|null, "clause_text": "string"}, '
+                '"confidence": number, "status": "PENDING_REVIEW", "human_confirmed": false'
+                "}\n\n"
+                f"Document name: {doc.filename}\n"
+                f"Document text:\n{text}"
+            )
+            response_text = self._converse(prompt)
+            response = self._parse_rule_json(response_text)
+            response.ai_engine = f"Amazon Bedrock ({aws_config.bedrock_model_id})"
+            response.aws_region = aws_config.bedrock_region
+            response.model_id = aws_config.bedrock_model_id
+            return response, None
+        except Exception as e:
+            logger.warning(f"Bedrock extraction failed ({e}). Seamlessly falling back to local NLP.")
 
-        # 3. High-fidelity deterministic/local NLP extractor for Build It mode
-        return self._local_strands_extraction(doc)
+        # 3. High-fidelity deterministic/local NLP extractor for Build It mode / offline fallback
+        rule, err = self._local_rule_extraction(doc)
+        if rule:
+            rule.ai_engine = "Local NLP Engine (Offline Fallback)"
+            rule.aws_region = aws_config.region
+            rule.model_id = "local-deterministic-nlp"
+        return rule, err
 
-    def _local_strands_extraction(self, doc: ParsedDocument) -> Tuple[Optional[ExtractedRule], Optional[str]]:
+    def _local_rule_extraction(self, doc: ParsedDocument) -> Tuple[Optional[ExtractedRule], Optional[str]]:
         """
         Strict, schema-validated reasoning extractor for local Build It development.
         Extracts numbers, operators, previous values, scope, and section/page citations.

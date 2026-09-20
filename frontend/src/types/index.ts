@@ -18,9 +18,11 @@ export interface RuleScope {
 
 export interface ExtractedRule {
   rule_id: string;
+  name?: string;
   field: string;
   operator: string;
   threshold_value: number;
+  value?: number;
   previous_value?: number | null;
   scope?: string | RuleScope | any;
   source_document: string;
@@ -32,7 +34,11 @@ export interface ExtractedRule {
   confirmed_by?: string | null;
   confirmed_at?: string | null;
   rule_type?: string;
+  ai_engine?: string;
+  aws_region?: string;
+  model_id?: string;
 }
+
 
 export interface ImpactResult {
   student_id: string;
@@ -103,6 +109,51 @@ export interface NotificationPreview {
       priority: string;
     };
   };
+}
+
+export interface AwsCredentialsInfo {
+  valid: boolean;
+  status: string;
+  account_id?: string;
+  arn?: string;
+  message: string;
+}
+
+export interface AwsBedrockInfo {
+  accessible: boolean;
+  region: string;
+  default_model: string;
+  mode: string;
+  message: string;
+  available_models_count?: number;
+}
+
+export interface AwsDynamoInfo {
+  accessible: boolean;
+  region: string;
+  prefix: string;
+  ripple_tables: string[];
+  tables_count: number;
+  mode: string;
+  message: string;
+}
+
+export interface AwsS3Info {
+  accessible: boolean;
+  bucket: string;
+  bucket_exists: boolean;
+  mode: string;
+  message: string;
+}
+
+export interface AwsDiagnostics {
+  cloud_mode: string;
+  region: string;
+  credentials: AwsCredentialsInfo;
+  bedrock: AwsBedrockInfo;
+  dynamodb: AwsDynamoInfo;
+  s3: AwsS3Info;
+  architecture: Record<string, string>;
 }
 
 export interface ToastMessage {

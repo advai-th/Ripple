@@ -1,9 +1,10 @@
 import type { AuthUser, AuthSession } from '../types/auth';
 
-const COGNITO_REGION = import.meta.env.VITE_COGNITO_REGION || 'us-east-1';
-const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID || '';
-const COGNITO_CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
-const AUTH_PROVIDER = import.meta.env.VITE_AUTH_PROVIDER || 'demo';
+export const COGNITO_REGION = import.meta.env.VITE_COGNITO_REGION || 'us-east-1';
+export const COGNITO_USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID || '';
+export const COGNITO_CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
+export const AUTH_PROVIDER = import.meta.env.VITE_AUTH_PROVIDER || 'demo';
+
 
 export const DEMO_USER: AuthUser = {
   id: 'usr_thorne_001',

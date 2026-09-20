@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { AuthUser, AuthSession, AuthContextType } from '../types/auth';
-import { cognitoAuthService, DEMO_USER } from '../services/cognitoAuth';
+import { cognitoAuthService } from '../services/cognitoAuth';
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
